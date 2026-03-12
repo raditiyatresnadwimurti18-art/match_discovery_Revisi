@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/sqllite.dart';
+import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/login/login1.dart';
 import 'package:match_discovery/models/login_model.dart';
@@ -152,7 +152,7 @@ class _ReggisterState extends State<Reggister> {
                               SnackBar(content: Text('Data Ditambahkan')),
                             );
                           }
-                          DBHelper1.registerUser(
+                          DBHelper.registerUser(
                             LoginModel(
                               nama: namaControler.text,
                               password: passwordControler.text,

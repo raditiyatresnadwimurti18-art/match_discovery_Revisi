@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/database/sql_lite.dart';
-import 'package:match_discovery/database/sqllite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/home.dart';
 import 'package:match_discovery/login/login1.dart';
@@ -45,7 +44,7 @@ class _LoginState extends State<Login> {
           ElevatedButton(
             onPressed: () async {
               // 1. Panggil fungsi login yang baru
-              var adminData = await DBHelper1.loginAdminModel(
+              var adminData = await DBHelper.loginAdminModel(
                 username: userAdmin.text,
                 password: passAdmin.text,
               );

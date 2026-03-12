@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/sqllite.dart';
+import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/models/admin_model.dart';
 
 class DaftarAdminPage extends StatefulWidget {
@@ -13,7 +13,7 @@ class DaftarAdminPage extends StatefulWidget {
 class _DaftarAdminPageState extends State<DaftarAdminPage> {
   // Fungsi untuk memuat ulang daftar admin
   Future<List<AdminModel>> _loadAdmin() async {
-    return await DBHelper1.getSemuaAdmin();
+    return await DBHelper.getSemuaAdmin();
   }
 
   void _confirmDelete(AdminModel admin) {
@@ -39,7 +39,7 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await DBHelper1.deleteAdmin(admin.id!);
+              await DBHelper.deleteAdmin(admin.id!);
               if (!mounted) return;
               Navigator.pop(context);
               setState(() {}); // Refresh UI setelah hapus

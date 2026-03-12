@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/database/sqllite.dart';
+import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/daftar_admin.dart';
 import 'package:match_discovery/login/login.dart';
@@ -29,7 +29,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
   Future<void> _fetchAdminData() async {
     int? id = await PreferenceHandler.getId();
     if (id != null) {
-      AdminModel? data = await DBHelper1.getAdminById(id);
+      AdminModel? data = await DBHelper.getAdminById(id);
       setState(() {
         _admin = data;
       });
@@ -52,7 +52,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
       );
 
       // 1. Update ke Database (Gunakan fungsi update khusus admin)
-      await DBHelper1.updateAdminProfile(updatedAdmin);
+      await DBHelper.updateAdminProfile(updatedAdmin);
 
       // 2. Refresh UI
       _fetchAdminData();
@@ -113,7 +113,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                 );
 
                 // Simpan ke database
-                await DBHelper1.addAdmin(newAdmin);
+                await DBHelper.addAdmin(newAdmin);
 
                 if (!context.mounted) return;
                 Navigator.pop(context);
@@ -208,7 +208,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                     if (nameController.text.isNotEmpty &&
                         userController.text.isNotEmpty &&
                         passController.text.isNotEmpty) {
-                      await DBHelper1.updateAdminDetail(
+                      await DBHelper.updateAdminDetail(
                         _admin!.id!,
                         nameController.text,
                         userController.text,

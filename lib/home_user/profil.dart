@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/database/sql_lite.dart';
-import 'package:match_discovery/database/sqllite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/models/login_model.dart';
@@ -28,7 +27,7 @@ class _ProfilUserState extends State<ProfilUser> {
   Future<void> _fetchUserData() async {
     int? id = await PreferenceHandler.getId();
     if (id != null) {
-      LoginModel? data = await DBHelper1.getUserById(id);
+      LoginModel? data = await DBHelper.getUserById(id);
       setState(() {
         _user = data;
       });
@@ -38,7 +37,7 @@ class _ProfilUserState extends State<ProfilUser> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && _user != null) {
-      await DBHelper1.updateUserProfile(_user!.id!, image.path);
+      await DBHelper.updateUserProfile(_user!.id!, image.path);
       _fetchUserData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +106,7 @@ class _ProfilUserState extends State<ProfilUser> {
             ),
             ElevatedButton(
               onPressed: () async {
-                await DBHelper1.updateUserDetail(
+                await DBHelper.updateUserDetail(
                   id: _user!.id!,
                   nama: namaController.text,
                   email: emailController.text,
