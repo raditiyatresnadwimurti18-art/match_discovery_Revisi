@@ -83,7 +83,7 @@ class DBHelper {
     );
     if (result.isNotEmpty) {
       final data = LoginModel.fromMap(result.first);
-      await PreferenceHandler.storingId(data.id!); // data.id sudah int
+      await PreferenceHandler.storingId(data.id!);
       await PreferenceHandler.storingIsLogin(true);
       await PreferenceHandler.setRole('user');
       return data;
@@ -91,7 +91,6 @@ class DBHelper {
     return null;
   }
 
-  /// Login admin — mengembalikan [AdminModel]
   static Future<AdminModel?> loginAdminModel({
     required String username,
     required String password,
@@ -104,7 +103,7 @@ class DBHelper {
     );
     if (result.isNotEmpty) {
       AdminModel admin = AdminModel.fromMap(result.first);
-      await PreferenceHandler.storingId(admin.id!); // admin.id sudah int
+      await PreferenceHandler.storingId(admin.id!);
       await PreferenceHandler.storingIsLogin(true);
       await PreferenceHandler.setRole('admin');
       return admin;
@@ -112,7 +111,6 @@ class DBHelper {
     return null;
   }
 
-  /// Login admin — mengembalikan [bool] (kompatibilitas kode lama)
   static Future<bool> loginAdmin({
     required String username,
     required String password,
@@ -124,7 +122,6 @@ class DBHelper {
       whereArgs: [username, password],
     );
     if (result.isNotEmpty) {
-      // FIX: cast as int karena result.first['id'] bertipe Object?
       await PreferenceHandler.storingId(result.first['id'] as int);
       await PreferenceHandler.storingIsLogin(true);
       await PreferenceHandler.setRole('admin');
@@ -335,6 +332,7 @@ class DBHelper {
     return result.isNotEmpty;
   }
 
+  /// Update status riwayat menjadi 'selesai'.
   static Future<int> konfirmasiSelesaiManual(int userId, int lombaId) async {
     final dbs = await db();
     return await dbs.update(
@@ -347,22 +345,28 @@ class DBHelper {
 
   // ==================== RIWAYAT USER ====================
 
+  /// FIX 1: Tambah filter WHERE status = 'aktif' agar item yang sudah
+  /// dikonfirmasi selesai tidak muncul lagi di halaman riwayat aktif.
+  /// FIX 2: Query debug — pastikan JOIN benar antara lomba & riwayatEvent.
   static Future<List<Map<String, dynamic>>> getRiwayatUser(int userId) async {
     final dbs = await db();
     return await dbs.rawQuery(
       '''
       SELECT
-        riwayat.id        AS idRiwayat,
+        riwayat.id          AS idRiwayat,
         riwayat.idLomba,
         riwayat.status,
-        COALESCE(lomba.judul,      re.judul)      AS judul,
-        COALESCE(lomba.lokasi,     re.lokasi)     AS lokasi,
-        COALESCE(lomba.tanggal,    re.tanggal)    AS tanggal,
-        COALESCE(lomba.gambarPath, re.gambarPath) AS gambarPath
+        COALESCE(lomba.judul,         re.judul)      AS judul,
+        COALESCE(lomba.lokasi,        re.lokasi)     AS lokasi,
+        COALESCE(lomba.tanggal,       re.tanggal)    AS tanggal,
+        COALESCE(lomba.gambarPath,    re.gambarPath) AS gambarPath
       FROM riwayat
-      LEFT JOIN lomba ON riwayat.idLomba = lomba.id
-      LEFT JOIN riwayatEvent re ON riwayat.idLomba = re.idLombaAsli
+      LEFT JOIN lomba
+        ON riwayat.idLomba = lomba.id
+      LEFT JOIN riwayatEvent re
+        ON riwayat.idLomba = re.idLombaAsli
       WHERE riwayat.idUser = ?
+        AND riwayat.status = 'aktif'
       ORDER BY riwayat.id DESC
     ''',
       [userId],
@@ -390,8 +394,6 @@ class DBHelper {
 
   // ==================== LAPORAN ADMIN ====================
 
-  /// FIX: LEFT JOIN + COALESCE agar lomba yang sudah diarsipkan
-  /// (kuota habis → pindah ke riwayatEvent) tetap muncul.
   static Future<List<Map<String, dynamic>>> getSemuaPendaftarGlobal() async {
     final dbs = await db();
     return await dbs.rawQuery('''
