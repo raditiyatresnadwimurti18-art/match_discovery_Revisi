@@ -139,6 +139,7 @@ class _DaftarLombaState extends State<DaftarLomba> {
 
         return GridView.builder(
           shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(12),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2, // 2 kolom
