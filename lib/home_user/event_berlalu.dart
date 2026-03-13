@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/sql_lite.dart';
+import 'package:match_discovery/database/controllers/riwayat.dart';
 
 class EventBerlalu extends StatefulWidget {
   const EventBerlalu({super.key});
@@ -22,8 +22,8 @@ class _EventBerlaluState extends State<EventBerlalu> {
       //   elevation: 0,
       // ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        // Kita perlu buat fungsi getRiwayatEvent di DBHelper
-        future: DBHelper.getRiwayatEvent(),
+        // Kita perlu buat fungsi getRiwayatEvent di RiwayatController
+        future: RiwayatController.getRiwayatEvent(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

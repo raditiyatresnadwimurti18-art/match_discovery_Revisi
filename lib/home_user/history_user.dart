@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/database/sql_lite.dart';
 
 class HistoryUser extends StatefulWidget {
   const HistoryUser({super.key});
@@ -32,7 +32,7 @@ class _HistoryUserState extends State<HistoryUser> {
     }
 
     // getRiwayatUser sudah difilter: hanya status = 'aktif'
-    final data = await DBHelper.getRiwayatUser(_userId!);
+    final data = await RiwayatController.getRiwayatUser(_userId!);
 
     setState(() {
       _historyList = data;
@@ -70,7 +70,10 @@ class _HistoryUserState extends State<HistoryUser> {
               Navigator.pop(ctx);
 
               // Update status → 'selesai' di database
-              await DBHelper.konfirmasiSelesaiManual(_userId!, lombaId);
+              await RiwayatController.konfirmasiSelesaiManual(
+                _userId!,
+                lombaId,
+              );
 
               // FIX: Refresh list — item dengan status 'selesai'
               // tidak akan muncul karena query sudah filter status = 'aktif'

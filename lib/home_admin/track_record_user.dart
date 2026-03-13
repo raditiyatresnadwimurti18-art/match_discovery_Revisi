@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/database/sql_lite.dart';
 
 class TrackRecordUser extends StatefulWidget {
   const TrackRecordUser({super.key});
@@ -27,8 +27,8 @@ class _TrackRecordUserState extends State<TrackRecordUser> {
       setState(() => _isLoading = false);
       return;
     }
-    final records = await DBHelper.getTrackRecordUser(userId);
-    final total = await DBHelper.getTotalSelesaiUser(userId);
+    final records = await RiwayatController.getTrackRecordUser(userId);
+    final total = await RiwayatController.getTotalSelesaiUser(userId);
     setState(() {
       _records = records;
       _totalSelesai = total;

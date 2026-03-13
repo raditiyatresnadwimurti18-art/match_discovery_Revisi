@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/sql_lite.dart';
+import 'package:match_discovery/database/controllers/laporan.dart';
+// ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 
 class DataUserLomba extends StatefulWidget {
@@ -24,7 +25,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
 
   void _refreshData() async {
     setState(() => _isLoading = true);
-    final data = await DBHelper.getSemuaPendaftarGlobal();
+    final data = await LaporanController.getSemuaPendaftarGlobal();
 
     final grouped = groupBy(
       data,
@@ -140,6 +141,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: Colors.blueAccent.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
@@ -181,6 +183,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
                   // Nomor urut
                   CircleAvatar(
                     radius: 16,
+                    // ignore: deprecated_member_use
                     backgroundColor: Colors.white.withOpacity(0.25),
                     child: Text(
                       '$nomor',
@@ -212,6 +215,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -272,6 +276,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
                         ),
                         leading: CircleAvatar(
                           radius: 18,
+                          // ignore: deprecated_member_use
                           backgroundColor: Colors.blueAccent.withOpacity(0.15),
                           child: Text(
                             '${i + 1}',
@@ -334,6 +339,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
                         ),
                     ],
                   );
+                  // ignore: unnecessary_to_list_in_spreads
                 }).toList(),
                 const SizedBox(height: 8),
               ],

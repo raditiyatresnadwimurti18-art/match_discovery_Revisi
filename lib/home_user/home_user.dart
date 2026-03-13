@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:match_discovery/database/controllers/user.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/extension/navigator.dart';
@@ -40,7 +41,7 @@ class _HomeUserState extends State<HomeUser> {
   Future<void> _fetchUserData() async {
     int? id = await PreferenceHandler.getId();
     if (id != null) {
-      LoginModel? data = await DBHelper.getUserById(id);
+      LoginModel? data = await UserController.getUserById(id);
       setState(() => _user = data);
     }
   }

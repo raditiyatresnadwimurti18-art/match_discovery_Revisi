@@ -4,7 +4,7 @@ import 'dart:convert';
 class LombaModel {
   final int? id;
   final String judul;
-  final String gambarPath;
+  final String? gambarPath;
   final int kuota;
   final String jenis; // Kategori
   final String tanggal;

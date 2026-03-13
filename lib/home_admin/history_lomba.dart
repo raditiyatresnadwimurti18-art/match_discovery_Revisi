@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/sql_lite.dart';
 
 class HistoryLomba extends StatefulWidget {
@@ -23,7 +24,7 @@ class _HistoryLombaState extends State<HistoryLomba> {
   // 3. Fungsi khusus untuk memuat ulang data
   void _refreshData() {
     setState(() {
-      _historyFuture = DBHelper.getRiwayatEvent();
+      _historyFuture = RiwayatController.getRiwayatEvent();
     });
   }
 
@@ -43,7 +44,7 @@ class _HistoryLombaState extends State<HistoryLomba> {
             ),
             TextButton(
               onPressed: () async {
-                await DBHelper.deleteRiwayatEvent(id);
+                await RiwayatController.deleteRiwayatEvent(id);
                 if (mounted) {
                   Navigator.pop(context);
                   // 4. Panggil refresh data setelah hapus berhasil

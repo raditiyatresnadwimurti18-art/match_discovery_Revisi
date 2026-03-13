@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/data_user_lomba.dart';
 import 'package:match_discovery/home_admin/history_lomba.dart';
@@ -46,7 +46,7 @@ class _HomeState extends State<Home> {
   Future<void> _fetchAdminData() async {
     int? id = await PreferenceHandler.getId();
     if (id != null) {
-      AdminModel? data = await DBHelper.getAdminById(id);
+      AdminModel? data = await AdminController.getAdminById(id);
       setState(() => _admin = data);
     }
   }
