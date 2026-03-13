@@ -7,7 +7,8 @@ import 'package:match_discovery/home_admin/data_user_lomba.dart';
 import 'package:match_discovery/home_admin/history_lomba.dart';
 import 'package:match_discovery/home_admin/isihome.dart';
 import 'package:match_discovery/home_admin/profil_admin.dart';
-import 'package:match_discovery/models/login_model.dart';
+import 'package:match_discovery/home_admin/track_record_user.dart';
+import 'package:match_discovery/models/admin_model.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -17,90 +18,198 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  static const List<Widget> _widgetOption = <Widget>[
+  int _selectIndex = 0;
+  AdminModel? _admin;
+
+  static const List<Widget> _pages = <Widget>[
     IsiHome(),
     DataUserLomba(),
     HistoryLomba(),
+    TrackRecordUser(),
   ];
-  int _selectIndex = 0;
-  void _ketikaDitekan(int index2) {
-    _selectIndex = index2;
-    setState(() {});
-  }
 
-  int? _userId;
-  LoginModel? _user;
+  final List<Map<String, dynamic>> _menuItems = [
+    {'label': 'Home', 'icon': Icons.home_rounded},
+    {'label': 'Data User', 'icon': Icons.verified_user_rounded},
+    {'label': 'History Lomba', 'icon': Icons.history_rounded},
+    {'label': 'Track Record', 'icon': Icons.workspace_premium_rounded},
+  ];
+
+  String get _currentTitle => _menuItems[_selectIndex]['label'] as String;
+
   @override
   void initState() {
     super.initState();
-    _loadUserId();
+    _fetchAdminData();
   }
 
-  Future<void> _loadUserId() async {
+  Future<void> _fetchAdminData() async {
     int? id = await PreferenceHandler.getId();
-    setState(() {
-      _userId = id;
-    });
+    if (id != null) {
+      AdminModel? data = await DBHelper.getAdminById(id);
+      setState(() => _admin = data);
+    }
   }
 
-  Future<void> _fetchUserData() async {
-    if (_userId != null) {
-      var data = await DBHelper.getUserById(_userId!);
-      setState(() {
-        _user = data; // Pastikan data ini berisi profilePath terbaru
-      });
-    }
+  void _onMenuTap(int index) {
+    setState(() => _selectIndex = index);
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // ── AppBar ──────────────────────────────────────────────
       appBar: AppBar(
-        leading: Image.asset('assets/images/logof1.png'),
-        title: Text('Discovery', style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        backgroundColor: const Color(0xff0f2a55),
+        title: Text(
+          _currentTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: () {
-              context.push(ProfilAdmin()).then((_) {
-                _fetchUserData();
-              });
-            },
-            icon: ClipOval(
-              child:
-                  _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-                  ? Image.file(
-                      File(_user!.profilePath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.person, size: 80),
-                    )
-                  : const Icon(Icons.person, size: 80),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () {
+                context
+                    .push(const ProfilAdmin())
+                    .then((_) => _fetchAdminData());
+              },
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: ClipOval(
+                  child:
+                      _admin?.profilePath != null &&
+                          _admin!.profilePath!.isNotEmpty
+                      ? Image.file(
+                          File(_admin!.profilePath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.person, color: Colors.white),
+                        )
+                      : const Icon(Icons.person, color: Colors.white),
+                ),
+              ),
             ),
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(2),
-          child: Container(
-            color: const Color.fromARGB(255, 105, 105, 105),
-            height: 1,
-          ),
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: Colors.white24, height: 1),
         ),
       ),
-      body: Center(child: _widgetOption.elementAt(_selectIndex)),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.verified_user_rounded),
-            label: 'Data User',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-        ],
-        currentIndex: _selectIndex,
-        onTap: _ketikaDitekan,
 
-        // selectedItemColor: Colors.blueAccent,
+      // ── Drawer ──────────────────────────────────────────────
+      drawer: Drawer(
+        child: Column(
+          children: [
+            // Header
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xff0f2a55)),
+              accountName: Text(
+                _admin?.nama ?? 'Admin',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              accountEmail: Text(
+                _admin?.role == 'super' ? 'Super Admin' : 'Admin Staff',
+                style: const TextStyle(fontSize: 12),
+              ),
+              currentAccountPicture: ClipOval(
+                child:
+                    _admin?.profilePath != null &&
+                        _admin!.profilePath!.isNotEmpty
+                    ? Image.file(
+                        File(_admin!.profilePath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.person, size: 50, color: Colors.white),
+              ),
+            ),
+
+            // Menu Items
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: _menuItems.length,
+                itemBuilder: (context, index) {
+                  final bool isSelected = _selectIndex == index;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xff0f2a55).withOpacity(0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      leading: Icon(
+                        _menuItems[index]['icon'] as IconData,
+                        color: isSelected
+                            ? const Color(0xff0f2a55)
+                            : Colors.grey[600],
+                      ),
+                      title: Text(
+                        _menuItems[index]['label'] as String,
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? const Color(0xff0f2a55)
+                              : Colors.grey[800],
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Container(
+                              width: 4,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: const Color(0xff0f2a55),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            )
+                          : null,
+                      onTap: () => _onMenuTap(index),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
+
+      // ── Body ────────────────────────────────────────────────
+      body: _pages.elementAt(_selectIndex),
     );
   }
 }

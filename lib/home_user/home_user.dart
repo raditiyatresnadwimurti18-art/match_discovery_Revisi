@@ -23,33 +23,25 @@ class _HomeUserState extends State<HomeUser> {
     HistoryUser(),
     EventBerlalu(),
   ];
+
   int _selectIndex = 0;
-  void _ketikaDitekan(int index2) {
-    _selectIndex = index2;
-    setState(() {});
+  LoginModel? _user;
+
+  void _ketikaDitekan(int index) {
+    setState(() => _selectIndex = index);
   }
 
-  int? _userId;
-  LoginModel? _user;
   @override
   void initState() {
     super.initState();
-    _loadUserId();
-  }
-
-  Future<void> _loadUserId() async {
-    int? id = await PreferenceHandler.getId();
-    setState(() {
-      _userId = id;
-    });
+    _fetchUserData();
   }
 
   Future<void> _fetchUserData() async {
-    if (_userId != null) {
-      var data = await DBHelper.getUserById(_userId!);
-      setState(() {
-        _user = data; // Pastikan data ini berisi profilePath terbaru
-      });
+    int? id = await PreferenceHandler.getId();
+    if (id != null) {
+      LoginModel? data = await DBHelper.getUserById(id);
+      setState(() => _user = data);
     }
   }
 
@@ -57,52 +49,79 @@ class _HomeUserState extends State<HomeUser> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: Image.asset('assets/images/logof1.png'),
-        title: Text('Discovery', style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+          ),
+        ),
+        title: const Text(
+          'Discovery',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xff0f2a55),
         actions: [
-          IconButton(
-            onPressed: () {
-              context.push(ProfilUser()).then((_) {
-                _fetchUserData();
-              });
-            },
-            icon: ClipOval(
-              child:
-                  _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-                  ? Image.file(
-                      File(_user!.profilePath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.person, size: 80),
-                    )
-                  : const Icon(Icons.person, size: 80),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () {
+                context.push(ProfilUser()).then((_) => _fetchUserData());
+              },
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: ClipOval(
+                  child:
+                      _user?.profilePath != null &&
+                          _user!.profilePath!.isNotEmpty
+                      ? Image.file(
+                          File(_user!.profilePath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.person, color: Colors.white),
+                        )
+                      : const Icon(Icons.person, color: Colors.white),
+                ),
+              ),
             ),
           ),
         ],
-        backgroundColor: const Color.fromARGB(255, 114, 234, 255),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(2),
-          child: Container(
-            color: const Color.fromARGB(255, 105, 105, 105),
-            height: 1,
-          ),
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: Colors.white24, height: 1),
         ),
       ),
 
       body: _widgetOption.elementAt(_selectIndex),
+
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xff0f2a55),
+        unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.event),
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_rounded),
+            label: 'History',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event_rounded),
             label: 'Event Terlewat',
           ),
         ],
         currentIndex: _selectIndex,
         onTap: _ketikaDitekan,
-
-        // selectedItemColor: Colors.blueAccent,
       ),
     );
   }

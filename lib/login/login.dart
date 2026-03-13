@@ -95,7 +95,7 @@ class _LoginState extends State<Login> {
               child: Column(
                 children: [
                   SizedBox(height: 34),
-                  Image.asset('assets/images/logof1.png', height: 160),
+                  Image.asset('assets/images/logo.png', height: 160),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 60),
                     child: Text(

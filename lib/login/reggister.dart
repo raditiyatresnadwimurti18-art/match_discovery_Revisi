@@ -27,7 +27,7 @@ class _ReggisterState extends State<Reggister> {
           padding: const EdgeInsets.symmetric(horizontal: 30),
           child: Column(
             children: [
-              Image.asset('assets/images/logof1.png', height: 300),
+              Image.asset('assets/images/logo.png', height: 300),
               Form(
                 key: _formKey,
                 child: Column(

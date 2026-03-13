@@ -13,14 +13,14 @@ class _EventBerlaluState extends State<EventBerlalu> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text("Event Telah Berakhir"),
-        centerTitle: true,
-        backgroundColor: Colors.grey[200],
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
+      // appBar: AppBar(
+      //   automaticallyImplyLeading: false,
+      //   title: const Text("Event Telah Berakhir"),
+      //   centerTitle: true,
+      //   backgroundColor: Colors.grey[200],
+      //   foregroundColor: Colors.black,
+      //   elevation: 0,
+      // ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         // Kita perlu buat fungsi getRiwayatEvent di DBHelper
         future: DBHelper.getRiwayatEvent(),

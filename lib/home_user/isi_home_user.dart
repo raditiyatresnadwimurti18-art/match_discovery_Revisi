@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/home_user/asset_lomba/daftar_lomba.dart';
-import 'package:match_discovery/home_user/widget1.dart';
+import 'package:match_discovery/home_user/promo_slider.dart';
 
 class IsiHomeUser extends StatefulWidget {
   const IsiHomeUser({super.key});
@@ -18,7 +18,7 @@ class _IsiHomeUserState extends State<IsiHomeUser> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
-          children: [Widget1(), DaftarLomba()],
+          children: [PromoSlider(), DaftarLomba()],
         ),
       ),
     );

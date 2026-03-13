@@ -2,6 +2,7 @@ import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/models/admin_model.dart';
 import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/models/riwayat_model.dart';
+import 'package:match_discovery/models/riwayat_selesai_user.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -11,7 +12,7 @@ class DBHelper {
   static Future<Database> db() async {
     final dbPath = await getDatabasesPath();
     return openDatabase(
-      join(dbPath, 'Match_Discovery_v14_final_db'),
+      join(dbPath, 'Match_Discovery_v15_final_db'),
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
@@ -56,6 +57,14 @@ class DBHelper {
           'role': 'super',
           'profilePath': '',
         });
+        await db.execute('''
+  CREATE TABLE riwayatSelesai (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    idUser    INTEGER,
+    judulLomba TEXT,
+    tanggalSelesai TEXT
+  )
+''');
       },
     );
   }
@@ -272,8 +281,8 @@ class DBHelper {
       await dbs.transaction((txn) async {
         List<Map> check = await txn.query(
           'riwayat',
-          where: 'idUser = ? AND idLomba = ?',
-          whereArgs: [riwayat.idUser, riwayat.idLomba],
+          where: 'idUser = ? AND idLomba = ? AND status = ?',
+          whereArgs: [riwayat.idUser, riwayat.idLomba, 'aktif'],
         );
         if (check.isNotEmpty) return;
 
@@ -326,28 +335,55 @@ class DBHelper {
     final dbs = await db();
     final result = await dbs.query(
       'riwayat',
-      where: 'idUser = ? AND idLomba = ?',
-      whereArgs: [userId, lombaId],
+      where: 'idUser = ? AND idLomba = ? AND status = ?',
+      whereArgs: [userId, lombaId, 'aktif'],
     );
     return result.isNotEmpty;
   }
 
-  /// Update status riwayat menjadi 'selesai'.
   static Future<int> konfirmasiSelesaiManual(int userId, int lombaId) async {
     final dbs = await db();
-    return await dbs.update(
+
+    final result = await dbs.update(
       'riwayat',
       {'status': 'selesai'},
       where: 'idUser = ? AND idLomba = ?',
       whereArgs: [userId, lombaId],
     );
+
+    String? judulLomba;
+    final lombaRes = await dbs.query(
+      'lomba',
+      where: 'id = ?',
+      whereArgs: [lombaId],
+    );
+    if (lombaRes.isNotEmpty) {
+      judulLomba = lombaRes.first['judul'] as String?;
+    } else {
+      final eventRes = await dbs.query(
+        'riwayatEvent',
+        where: 'idLombaAsli = ?',
+        whereArgs: [lombaId],
+      );
+      if (eventRes.isNotEmpty) {
+        judulLomba = eventRes.first['judul'] as String?;
+      }
+    }
+
+    await dbs.insert(
+      'riwayatSelesai',
+      RiwayatSelesaiModel(
+        idUser: userId,
+        judulLomba: judulLomba ?? 'Tidak Diketahui',
+        tanggalSelesai: DateTime.now().toIso8601String().split('T').first,
+      ).toMap(),
+    );
+
+    return result;
   }
 
   // ==================== RIWAYAT USER ====================
 
-  /// FIX 1: Tambah filter WHERE status = 'aktif' agar item yang sudah
-  /// dikonfirmasi selesai tidak muncul lagi di halaman riwayat aktif.
-  /// FIX 2: Query debug — pastikan JOIN benar antara lomba & riwayatEvent.
   static Future<List<Map<String, dynamic>>> getRiwayatUser(int userId) async {
     final dbs = await db();
     return await dbs.rawQuery(
@@ -371,6 +407,37 @@ class DBHelper {
     ''',
       [userId],
     );
+  }
+  // ==================== TRACK RECORD USER ====================
+
+  /// Ambil rekap: total lomba selesai + daftar judul + berapa kali ikut
+  static Future<List<Map<String, dynamic>>> getTrackRecordUser(
+    int userId,
+  ) async {
+    final dbs = await db();
+    return await dbs.rawQuery(
+      '''
+    SELECT
+      judulLomba,
+      COUNT(*) AS jumlahIkut,
+      MAX(tanggalSelesai) AS terakhirIkut
+    FROM riwayatSelesai
+    WHERE idUser = ?
+    GROUP BY judulLomba
+    ORDER BY jumlahIkut DESC
+  ''',
+      [userId],
+    );
+  }
+
+  /// Total lomba yang pernah diselesaikan user
+  static Future<int> getTotalSelesaiUser(int userId) async {
+    final dbs = await db();
+    final res = await dbs.rawQuery(
+      'SELECT COUNT(*) AS total FROM riwayatSelesai WHERE idUser = ?',
+      [userId],
+    );
+    return Sqflite.firstIntValue(res) ?? 0;
   }
 
   // ==================== RIWAYAT EVENT ====================

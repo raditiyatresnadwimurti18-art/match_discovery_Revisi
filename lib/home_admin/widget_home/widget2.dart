@@ -418,7 +418,33 @@ class _Widget2State extends State<Widget2> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deleteLomba(_allLomba[index]['id']),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Konfirmasi"),
+                              content: const Text(
+                                "Apakah Anda yakin ingin menghapus lomba ini?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(
+                                    context,
+                                  ), // Tutup dialog saja
+                                  child: const Text("Batal"),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () async {
+                                    _deleteLomba(_allLomba[index]['id']);
+                                  },
+                                  child: const Text("Hapus"),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),

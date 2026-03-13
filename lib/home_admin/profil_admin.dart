@@ -248,195 +248,198 @@ class _ProfilAdminState extends State<ProfilAdmin> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(bottom: 30),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color.fromARGB(255, 61, 77, 104), Colors.white],
-              ),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 50),
-                Center(
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xff0f2a55),
-                            width: 4.0,
-                          ),
-                        ),
-                        child: ClipOval(
-                          child:
-                              _admin?.profilePath != null &&
-                                  _admin!.profilePath!.isNotEmpty
-                              ? Image.file(
-                                  File(_admin!.profilePath!),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(Icons.person, size: 80),
-                                )
-                              : const Icon(Icons.person, size: 80),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Color(0xff0f2a55),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  _admin?.nama ?? 'Admin',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                // Chip Role (Menampilkan apakah dia Super Admin atau Admin Biasa)
-                Container(
-                  // margin: const EdgeInsets.top(5),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _admin?.role == 'super'
-                        ? Colors.amber
-                        : Colors.blueGrey,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _admin?.role == 'super' ? 'SUPER ADMIN' : 'ADMIN STAFF',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Informasi Akun
-          if (_admin?.role == 'super') ...[
-            ListTile(
-              leading: const Icon(Icons.person_add, color: Colors.blue),
-              title: const Text("Tambah Admin Baru"),
-              subtitle: const Text("Buat akun akses untuk staff admin"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showAddAdminDialog(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.manage_accounts, color: Colors.green),
-              title: const Text("Kelola Daftar Admin"),
-              subtitle: const Text("Lihat dan hapus staff admin"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DaftarAdminPage(),
-                  ),
-                ).then((_) => _fetchAdminData()); // Refresh data saat kembali
-              },
-            ),
-            const Divider(),
-          ],
-          ListTile(
-            leading: const Icon(Icons.badge),
-            title: const Text("Username"),
-            subtitle: Text(_admin?.username ?? "-"),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit_note, color: Colors.blue),
-              onPressed:
-                  _showEditSelfDialog, // Panggil dialog edit diri sendiri
-            ),
-          ),
-          const Spacer(),
-
-          // Tombol Logout
-          // Tombol Logout
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: SizedBox(
-              height: 50,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
               width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  // Tampilkan Dialog Konfirmasi Logout
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Konfirmasi Logout"),
-                      content: const Text(
-                        "Apakah Anda yakin ingin keluar dari akun ini?",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.pop(context), // Tutup dialog saja
-                          child: const Text("Batal"),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
+              padding: const EdgeInsets.only(bottom: 30),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color.fromARGB(255, 61, 77, 104), Colors.white],
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 50),
+                  Center(
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xff0f2a55),
+                              width: 4.0,
+                            ),
                           ),
-                          onPressed: () async {
-                            // Jalankan proses logout
-                            await PreferenceHandler.deleteIsLogin();
-                            await PreferenceHandler.deleteId();
-
-                            if (!mounted) return;
-                            // Tutup dialog dan pindah ke halaman Login
-                            Navigator.pop(context);
-                            context.pushAndRemoveAll(const Login());
-                          },
-                          child: const Text("Keluar"),
+                          child: ClipOval(
+                            child:
+                                _admin?.profilePath != null &&
+                                    _admin!.profilePath!.isNotEmpty
+                                ? Image.file(
+                                    File(_admin!.profilePath!),
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(Icons.person, size: 80),
+                                  )
+                                : const Icon(Icons.person, size: 80),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0xff0f2a55),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.red),
-                ),
-                child: const Text('Log Out'),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    _admin?.nama ?? 'Admin',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  // Chip Role (Menampilkan apakah dia Super Admin atau Admin Biasa)
+                  Container(
+                    // margin: const EdgeInsets.top(5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _admin?.role == 'super'
+                          ? Colors.amber
+                          : Colors.blueGrey,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _admin?.role == 'super' ? 'SUPER ADMIN' : 'ADMIN STAFF',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 30),
-        ],
+
+            // Informasi Akun
+            if (_admin?.role == 'super') ...[
+              ListTile(
+                leading: const Icon(Icons.person_add, color: Colors.blue),
+                title: const Text("Tambah Admin Baru"),
+                subtitle: const Text("Buat akun akses untuk staff admin"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showAddAdminDialog(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.manage_accounts, color: Colors.green),
+                title: const Text("Kelola Daftar Admin"),
+                subtitle: const Text("Lihat dan hapus staff admin"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DaftarAdminPage(),
+                    ),
+                  ).then((_) => _fetchAdminData()); // Refresh data saat kembali
+                },
+              ),
+              const Divider(),
+            ],
+            ListTile(
+              leading: const Icon(Icons.badge),
+              title: const Text("Username"),
+              subtitle: Text(_admin?.username ?? "-"),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit_note, color: Colors.blue),
+                onPressed:
+                    _showEditSelfDialog, // Panggil dialog edit diri sendiri
+              ),
+            ),
+            SizedBox(height: 150),
+
+            // Tombol Logout
+            // Tombol Logout
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Tampilkan Dialog Konfirmasi Logout
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Konfirmasi Logout"),
+                        content: const Text(
+                          "Apakah Anda yakin ingin keluar dari akun ini?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(context), // Tutup dialog saja
+                            child: const Text("Batal"),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () async {
+                              // Jalankan proses logout
+                              await PreferenceHandler.deleteIsLogin();
+                              await PreferenceHandler.deleteId();
+
+                              if (!mounted) return;
+                              // Tutup dialog dan pindah ke halaman Login
+                              Navigator.pop(context);
+                              context.pushAndRemoveAll(const Login());
+                            },
+                            child: const Text("Keluar"),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                  child: const Text('Log Out'),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+          ],
+        ),
       ),
     );
   }
