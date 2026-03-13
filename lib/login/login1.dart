@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:match_discovery/database/controllers/auth.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_user/home_user.dart';
 import 'package:match_discovery/login/reggister.dart';
@@ -78,10 +78,11 @@ class _Login1State extends State<Login1> {
                       height: 50,
                       child: OutlinedButton(
                         onPressed: () async {
-                          final LoginModel? login = await DBHelper.loginUser(
-                            email: emailController.text,
-                            password: passwordController.text,
-                          );
+                          final LoginModel? login =
+                              await AuthController.loginUser(
+                                email: emailController.text,
+                                password: passwordController.text,
+                              );
                           if (login != null) {
                             // LOGIN BERHASIL
 

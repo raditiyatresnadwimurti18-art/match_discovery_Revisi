@@ -59,7 +59,6 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ── AppBar ──────────────────────────────────────────────
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
@@ -114,11 +113,9 @@ class _HomeState extends State<Home> {
         ),
       ),
 
-      // ── Drawer ──────────────────────────────────────────────
       drawer: Drawer(
         child: Column(
           children: [
-            // Header
             UserAccountsDrawerHeader(
               decoration: const BoxDecoration(color: Color(0xff0f2a55)),
               accountName: Text(
@@ -208,7 +205,6 @@ class _HomeState extends State<Home> {
         ),
       ),
 
-      // ── Body ────────────────────────────────────────────────
       body: _pages.elementAt(_selectIndex),
     );
   }
