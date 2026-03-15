@@ -9,6 +9,7 @@ import 'package:match_discovery/home_admin/isihome.dart';
 import 'package:match_discovery/home_admin/profil_admin.dart';
 import 'package:match_discovery/home_admin/track_record_user.dart';
 import 'package:match_discovery/models/admin_model.dart';
+import 'package:match_discovery/util/app_theme.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -29,9 +30,9 @@ class _HomeState extends State<Home> {
   ];
 
   final List<Map<String, dynamic>> _menuItems = [
-    {'label': 'Home', 'icon': Icons.home_rounded},
-    {'label': 'Data User', 'icon': Icons.verified_user_rounded},
-    {'label': 'History Lomba', 'icon': Icons.history_rounded},
+    {'label': 'Home',         'icon': Icons.home_rounded},
+    {'label': 'Data User',    'icon': Icons.verified_user_rounded},
+    {'label': 'History Lomba','icon': Icons.history_rounded},
     {'label': 'Track Record', 'icon': Icons.workspace_premium_rounded},
   ];
 
@@ -43,11 +44,16 @@ class _HomeState extends State<Home> {
     _fetchAdminData();
   }
 
+  // ✅ Fix: tambah mounted check
   Future<void> _fetchAdminData() async {
     int? id = await PreferenceHandler.getId();
-    if (id != null) {
+    if (id == null) return;
+    try {
       AdminModel? data = await AdminController.getAdminById(id);
+      if (!mounted) return; // ✅
       setState(() => _admin = data);
+    } catch (e) {
+      debugPrint('Error fetchAdminData home: $e');
     }
   }
 
@@ -61,29 +67,24 @@ class _HomeState extends State<Home> {
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
-          builder: (context) => IconButton(
+          builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        backgroundColor: const Color(0xff0f2a55),
-        title: Text(
-          _currentTitle,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        backgroundColor: kPrimaryColor,
+        title: Text(_currentTitle, style: kWhiteBoldStyle),
         centerTitle: true,
+        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
-              onTap: () {
-                context
-                    .push(const ProfilAdmin())
-                    .then((_) => _fetchAdminData());
-              },
+              // ✅ Fix: pakai Navigator.push bukan context.push
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilAdmin()),
+              ).then((_) => _fetchAdminData()),
               child: Container(
                 width: 38,
                 height: 38,
@@ -92,8 +93,7 @@ class _HomeState extends State<Home> {
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: ClipOval(
-                  child:
-                      _admin?.profilePath != null &&
+                  child: _admin?.profilePath != null &&
                           _admin!.profilePath!.isNotEmpty
                       ? Image.file(
                           File(_admin!.profilePath!),
@@ -117,36 +117,28 @@ class _HomeState extends State<Home> {
         child: Column(
           children: [
             UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xff0f2a55)),
+              decoration: const BoxDecoration(color: kPrimaryColor),
               accountName: Text(
                 _admin?.nama ?? 'Admin',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               accountEmail: Text(
                 _admin?.role == 'super' ? 'Super Admin' : 'Admin Staff',
                 style: const TextStyle(fontSize: 12),
               ),
               currentAccountPicture: ClipOval(
-                child:
-                    _admin?.profilePath != null &&
+                child: _admin?.profilePath != null &&
                         _admin!.profilePath!.isNotEmpty
                     ? Image.file(
                         File(_admin!.profilePath!),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
-                        ),
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.person, size: 50, color: Colors.white),
                       )
                     : const Icon(Icons.person, size: 50, color: Colors.white),
               ),
             ),
 
-            // Menu Items
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.zero,
@@ -154,25 +146,19 @@ class _HomeState extends State<Home> {
                 itemBuilder: (context, index) {
                   final bool isSelected = _selectIndex == index;
                   return Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xff0f2a55).withOpacity(0.1)
+                          ? kPrimaryColor.withOpacity(0.1)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: ListTile(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                          borderRadius: BorderRadius.circular(10)),
                       leading: Icon(
                         _menuItems[index]['icon'] as IconData,
-                        color: isSelected
-                            ? const Color(0xff0f2a55)
-                            : Colors.grey[600],
+                        color: isSelected ? kPrimaryColor : Colors.grey[600],
                       ),
                       title: Text(
                         _menuItems[index]['label'] as String,
@@ -180,9 +166,7 @@ class _HomeState extends State<Home> {
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color: isSelected
-                              ? const Color(0xff0f2a55)
-                              : Colors.grey[800],
+                          color: isSelected ? kPrimaryColor : Colors.grey[800],
                         ),
                       ),
                       trailing: isSelected
@@ -190,7 +174,7 @@ class _HomeState extends State<Home> {
                               width: 4,
                               height: 30,
                               decoration: BoxDecoration(
-                                color: const Color(0xff0f2a55),
+                                color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             )

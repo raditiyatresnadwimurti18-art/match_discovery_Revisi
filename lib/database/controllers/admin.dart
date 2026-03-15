@@ -21,12 +21,21 @@ class AdminController {
 
   // ==================== READ ====================
 
-  static Future<AdminModel?> getAdminById(int id) async {
-    final dbs = await DBHelper.db();
-    final result = await dbs.query('admin', where: 'id = ?', whereArgs: [id]);
-    if (result.isNotEmpty) return AdminModel.fromMap(result.first);
-    return null;
+static Future<AdminModel?> getAdminById(int id) async {
+  try {
+    final db = await DBHelper.db();
+    final result = await db.query(
+      'admin',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (result.isEmpty) return null;
+    return AdminModel.fromMap(result.first);
+  } catch (e) {
+    return null; 
   }
+}
 
   static Future<List<AdminModel>> getSemuaAdmin() async {
     final dbs = await DBHelper.db();

@@ -5,7 +5,9 @@ import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/daftar_admin.dart';
 import 'package:match_discovery/login/login.dart';
-import 'package:match_discovery/models/admin_model.dart'; // Ganti ke AdminModel
+import 'package:match_discovery/models/admin_model.dart';
+import 'package:match_discovery/util/app_theme.dart';
+import 'package:match_discovery/util/decoration_form.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfilAdmin extends StatefulWidget {
@@ -17,7 +19,7 @@ class ProfilAdmin extends StatefulWidget {
 
 class _ProfilAdminState extends State<ProfilAdmin> {
   final ImagePicker _picker = ImagePicker();
-  AdminModel? _admin; // Menggunakan AdminModel
+  AdminModel? _admin;
 
   @override
   void initState() {
@@ -25,24 +27,36 @@ class _ProfilAdminState extends State<ProfilAdmin> {
     _fetchAdminData();
   }
 
-  // Ambil data admin dari DB
-  Future<void> _fetchAdminData() async {
-    int? id = await PreferenceHandler.getId();
-    if (id != null) {
-      AdminModel? data = await AdminController.getAdminById(id);
-      setState(() {
-        _admin = data;
-      });
-    }
-  }
+ Future<void> _fetchAdminData() async {
+  int? id = await PreferenceHandler.getId();
+  if (id == null) return;
 
-  // Fungsi ganti foto profil
+  try {
+    AdminModel? data = await AdminController.getAdminById(id);
+
+    if (!mounted) return;
+
+    if (data != null) {
+      setState(() => _admin = data);
+    } else {
+      debugPrint('Admin dengan id $id tidak ditemukan');
+    }
+  } catch (e) {
+    debugPrint('Error fetchAdminData: $e');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Gagal memuat data: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-
     if (image != null && _admin != null) {
-      // Buat objek update dengan path foto baru
-      AdminModel updatedAdmin = AdminModel(
+      AdminModel updated = AdminModel(
         id: _admin!.id,
         username: _admin!.username,
         password: _admin!.password,
@@ -50,13 +64,8 @@ class _ProfilAdminState extends State<ProfilAdmin> {
         profilePath: image.path,
         role: _admin!.role,
       );
-
-      // 1. Update ke Database (Gunakan fungsi update khusus admin)
-      await AdminController.updateAdminProfile(updatedAdmin);
-
-      // 2. Refresh UI
-      _fetchAdminData();
-
+      await AdminController.updateAdminProfile(updated);
+      await _fetchAdminData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto profil admin berhasil diperbarui')),
@@ -65,68 +74,62 @@ class _ProfilAdminState extends State<ProfilAdmin> {
   }
 
   void _showAddAdminDialog(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController userController = TextEditingController();
-    final TextEditingController passController = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final userCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Tambah Admin Baru"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.person_add, color: kPrimaryColor),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text("Tambah Admin Baru",textAlign: TextAlign.center,
+                  style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Nama Lengkap"),
-              ),
-              TextField(
-                controller: userController,
-                decoration: const InputDecoration(labelText: "Username"),
-              ),
-              TextField(
-                controller: passController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "Password"),
-              ),
+              TextField(controller: nameCtrl,
+                  decoration: decorationConstant(hintText: 'Nama Lengkap', labelText: 'Nama', prefixIcon: Icons.person_outline)),
+              const SizedBox(height: 12),
+              TextField(controller: userCtrl,
+                  decoration: decorationConstant(hintText: 'Username', labelText: 'Username', prefixIcon: Icons.alternate_email)),
+              const SizedBox(height: 12),
+              TextField(controller: passCtrl, obscureText: true,
+                  decoration: decorationConstant(hintText: 'Password', labelText: 'Password', prefixIcon: Icons.lock_outline)),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
+            child: const Text("Batal", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
+            style: kPrimaryButtonStyle(radius: 12),
             onPressed: () async {
-              if (nameController.text.isNotEmpty &&
-                  userController.text.isNotEmpty &&
-                  passController.text.isNotEmpty) {
-                // Buat objek admin baru
-                AdminModel newAdmin = AdminModel(
-                  nama: nameController.text,
-                  username: userController.text,
-                  password: passController.text,
-                  role: 'biasa', // Admin yang dibuat otomatis role 'biasa'
+              if (nameCtrl.text.isNotEmpty && userCtrl.text.isNotEmpty && passCtrl.text.isNotEmpty) {
+                await AdminController.addAdmin(AdminModel(
+                  nama: nameCtrl.text,
+                  username: userCtrl.text,
+                  password: passCtrl.text,
+                  role: 'biasa',
                   profilePath: '',
-                );
-
-                // Simpan ke database
-                await AdminController.addAdmin(newAdmin);
-
+                ));
                 if (!context.mounted) return;
                 Navigator.pop(context);
-
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Admin baru berhasil ditambahkan!"),
-                  ),
-                );
+                    const SnackBar(content: Text("Admin baru berhasil ditambahkan!")));
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Semua field harus diisi!")),
-                );
+                    const SnackBar(content: Text("Semua field harus diisi!")));
               }
             },
             child: const Text("Simpan"),
@@ -136,121 +139,86 @@ class _ProfilAdminState extends State<ProfilAdmin> {
     );
   }
 
-  // Tambahkan fungsi ini di dalam _DaftarAdminPageState
   void _showEditSelfDialog() {
     if (_admin == null) return;
-
-    final nameController = TextEditingController(text: _admin!.nama);
-    final userController = TextEditingController(text: _admin!.username);
-    final passController = TextEditingController(text: _admin!.password);
-
-    // Variabel lokal untuk mengontrol terlihatnya password
+    final nameCtrl = TextEditingController(text: _admin!.nama);
+    final userCtrl = TextEditingController(text: _admin!.username);
+    final passCtrl = TextEditingController(text: _admin!.password);
     bool isPasswordVisible = false;
 
     showDialog(
       context: context,
-      builder: (context) {
-        // Menggunakan StatefulBuilder agar UI di dalam dialog bisa di-refresh
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text("Edit Profil Saya"),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: "Nama Lengkap",
-                        icon: Icon(Icons.person),
-                      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.edit, color: kPrimaryColor),
+              SizedBox(width: 8),
+              Text("Edit Profil Saya",
+                  style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl,
+                    decoration: decorationConstant(hintText: 'Nama Lengkap', labelText: 'Nama', prefixIcon: Icons.person_outline)),
+                const SizedBox(height: 12),
+                TextField(controller: userCtrl,
+                    decoration: decorationConstant(hintText: 'Username', labelText: 'Username', prefixIcon: Icons.alternate_email)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: !isPasswordVisible,
+                  decoration: decorationConstant(
+                    hintText: 'Password Baru', labelText: 'Password', prefixIcon: Icons.lock_outline,
+                  ).copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
+                      onPressed: () => setStateDialog(() => isPasswordVisible = !isPasswordVisible),
                     ),
-                    TextField(
-                      controller: userController,
-                      decoration: const InputDecoration(
-                        labelText: "Username",
-                        icon: Icon(Icons.alternate_email),
-                      ),
-                    ),
-                    TextField(
-                      controller: passController,
-                      obscureText: !isPasswordVisible, // Logika sensor
-                      decoration: InputDecoration(
-                        labelText: "Password Baru",
-                        icon: const Icon(Icons.lock_outline),
-                        // Tambahkan tombol mata di sini
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            // Gunakan setState milik StatefulBuilder
-                            setStateDialog(() {
-                              isPasswordVisible = !isPasswordVisible;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Batal"),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (nameController.text.isNotEmpty &&
-                        userController.text.isNotEmpty &&
-                        passController.text.isNotEmpty) {
-                      await AdminController.updateAdminDetail(
-                        _admin!.id!,
-                        nameController.text,
-                        userController.text,
-                        passController.text,
-                      );
-
-                      if (!mounted) return;
-                      Navigator.pop(context);
-                      _fetchAdminData(); // Refresh tampilan profil
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Profil berhasil diperbarui!"),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text("Simpan"),
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: kPrimaryButtonStyle(radius: 12),
+              onPressed: () async {
+                if (nameCtrl.text.isNotEmpty && userCtrl.text.isNotEmpty && passCtrl.text.isNotEmpty) {
+                  await AdminController.updateAdminDetail(
+                      _admin!.id!, nameCtrl.text, userCtrl.text, passCtrl.text);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  await _fetchAdminData();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Profil berhasil diperbarui!")));
+                }
+              },
+              child: const Text("Simpan"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white),
-        backgroundColor: const Color(0xff0f2a55),
-        title: const Text(
-          'Profil Admin',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-      ),
+      backgroundColor: kBgColor,
+      appBar: kPrimaryAppBar(title: 'Profil Admin',roundedBottom: false),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // ── Header Profil ─────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.only(bottom: 30),
@@ -258,96 +226,60 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color.fromARGB(255, 61, 77, 104), Colors.white],
+                  colors: [kPrimaryColor, kBgColor],
                 ),
               ),
               child: Column(
                 children: [
-                  const SizedBox(height: 50),
-                  Center(
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xff0f2a55),
-                              width: 4.0,
-                            ),
-                          ),
-                          child: ClipOval(
-                            child:
-                                _admin?.profilePath != null &&
-                                    _admin!.profilePath!.isNotEmpty
-                                ? Image.file(
-                                    File(_admin!.profilePath!),
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(Icons.person, size: 80),
-                                  )
-                                : const Icon(Icons.person, size: 80),
+                  const SizedBox(height: 30),
+                  Stack(
+                    children: [
+                      Container(
+                        width: 120, height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: kAccentColor, width: 3.5),
+                        ),
+                        child: ClipOval(
+                          child: _admin?.profilePath != null && _admin!.profilePath!.isNotEmpty
+                              ? Image.file(File(_admin!.profilePath!), fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80))
+                              : const Icon(Icons.person, size: 80),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0, right: 0,
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(color: kAccentColor, shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
                           ),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Color(0xff0f2a55),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 15),
-                  Text(
-                    _admin?.nama ?? 'Admin',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  // Chip Role (Menampilkan apakah dia Super Admin atau Admin Biasa)
+                  const SizedBox(height: 12),
+                  Text(_admin?.nama ?? 'Admin',
+                      style: kTitleStyle.copyWith(fontSize: 22)),
+                  const SizedBox(height: 6),
                   Container(
-                    // margin: const EdgeInsets.top(5),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _admin?.role == 'super'
-                          ? Colors.amber
-                          : Colors.blueGrey,
+                      color: _admin?.role == 'super' ? kAccentColor : Colors.blueGrey,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       _admin?.role == 'super' ? 'SUPER ADMIN' : 'ADMIN STAFF',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: kWhiteBoldStyle.copyWith(fontSize: 11),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Informasi Akun
+            // ── Menu Super Admin ──────────────────────────────
             if (_admin?.role == 'super') ...[
               ListTile(
                 leading: const Icon(Icons.person_add, color: Colors.blue),
@@ -361,79 +293,65 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                 title: const Text("Kelola Daftar Admin"),
                 subtitle: const Text("Lihat dan hapus staff admin"),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DaftarAdminPage(),
-                    ),
-                  ).then((_) => _fetchAdminData()); // Refresh data saat kembali
-                },
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const DaftarAdminPage()))
+                    .then((_) => _fetchAdminData()),
               ),
               const Divider(),
             ],
+
+            // ── Info ──────────────────────────────────────────
             ListTile(
-              leading: const Icon(Icons.badge),
+              leading: const Icon(Icons.badge, color: kPrimaryColor),
               title: const Text("Username"),
               subtitle: Text(_admin?.username ?? "-"),
               trailing: IconButton(
-                icon: const Icon(Icons.edit_note, color: Colors.blue),
-                onPressed:
-                    _showEditSelfDialog, // Panggil dialog edit diri sendiri
+                icon: const Icon(Icons.edit_note, color: kPrimaryColor),
+                onPressed: _showEditSelfDialog,
               ),
             ),
-            SizedBox(height: 150),
+            const SizedBox(height: 80),
 
-            // Tombol Logout
-            // Tombol Logout
+            // ── Tombol Logout ─────────────────────────────────
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SizedBox(
-                height: 50,
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Tampilkan Dialog Konfirmasi Logout
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text("Konfirmasi Logout"),
-                        content: const Text(
-                          "Apakah Anda yakin ingin keluar dari akun ini?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context), // Tutup dialog saja
-                            child: const Text("Batal"),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                            ),
-                            onPressed: () async {
-                              // Jalankan proses logout
-                              await PreferenceHandler.deleteIsLogin();
-                              await PreferenceHandler.deleteId();
-
-                              if (!mounted) return;
-                              // Tutup dialog dan pindah ke halaman Login
-                              Navigator.pop(context);
-                              context.pushAndRemoveAll(const Login());
-                            },
-                            child: const Text("Keluar"),
-                          ),
+                height: 50, width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.logout, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text("Konfirmasi Logout"),
                         ],
                       ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.red),
+                      content: const Text("Apakah Anda yakin ingin keluar?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+                        ),
+                        ElevatedButton(
+                          style: kDangerButtonStyle(),
+                          onPressed: () async {
+                            await PreferenceHandler.deleteIsLogin();
+                            await PreferenceHandler.deleteId();
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            context.pushAndRemoveAll(const Login());
+                          },
+                          child: const Text("Keluar"),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Text('Log Out'),
+                  style: kDangerButtonStyle(radius: 16),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Log Out'),
                 ),
               ),
             ),

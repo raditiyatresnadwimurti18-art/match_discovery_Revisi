@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
-import 'package:match_discovery/database/controllers/user.dart';
-import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/models/lomba_model.dart';
+import 'package:match_discovery/util/app_theme.dart';
+import 'package:match_discovery/util/decoration_form.dart';
 import 'package:image_picker/image_picker.dart';
 
 class Widget2 extends StatefulWidget {
@@ -15,35 +14,38 @@ class Widget2 extends StatefulWidget {
 }
 
 class _Widget2State extends State<Widget2> {
-  LoginModel? _user;
+  // ✅ Hapus: LoginModel? _user — tidak dipakai
   List<LombaModel> _allLomba = [];
   String? _imagePath;
 
-  // Controller untuk Form
-  final TextEditingController _judulController = TextEditingController();
-  final TextEditingController _lokasiController = TextEditingController();
-  final TextEditingController _deskripsiController = TextEditingController();
-  final TextEditingController _kuotaController = TextEditingController();
-  final TextEditingController _jenisController = TextEditingController();
-  final TextEditingController _tanggalController = TextEditingController();
+  final _judulCtrl     = TextEditingController();
+  final _lokasiCtrl    = TextEditingController();
+  final _deskripsiCtrl = TextEditingController();
+  final _kuotaCtrl     = TextEditingController();
+  final _jenisCtrl     = TextEditingController();
+  final _tanggalCtrl   = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
     _refreshLomba();
   }
 
-  Future<void> _fetchUserData() async {
-    final id = await PreferenceHandler.getId();
-    if (id != null) {
-      final data = await UserController.getUserById(id);
-      setState(() => _user = data);
-    }
+  @override
+  void dispose() {
+    _judulCtrl.dispose();
+    _lokasiCtrl.dispose();
+    _deskripsiCtrl.dispose();
+    _kuotaCtrl.dispose();
+    _jenisCtrl.dispose();
+    _tanggalCtrl.dispose();
+    super.dispose();
   }
+
 
   Future<void> _refreshLomba() async {
     final data = await LombaController.getAllLomba();
+    if (!mounted) return;
     setState(() => _allLomba = data);
   }
 
@@ -56,38 +58,34 @@ class _Widget2State extends State<Widget2> {
     );
     if (picked != null) {
       setState(() {
-        _tanggalController.text =
+        _tanggalCtrl.text =
             "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
     }
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() => _imagePath = image.path);
-    }
+    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image != null) setState(() => _imagePath = image.path);
   }
 
-  void _showForm(int? id) async {
-    LombaModel? existing;
+  void _showForm(int? id) {
     if (id != null) {
-      existing = _allLomba.firstWhere((e) => e.id == id);
-      _judulController.text = existing.judul ?? '';
-      _lokasiController.text = existing.lokasi ?? '';
-      _deskripsiController.text = existing.deskripsi ?? '';
-      _kuotaController.text = existing.kuota?.toString() ?? '0';
-      _jenisController.text = existing.jenis ?? '';
-      _tanggalController.text = existing.tanggal ?? '';
-      _imagePath = existing.gambarPath;
+      final e = _allLomba.firstWhere((e) => e.id == id);
+      _judulCtrl.text     = e.judul ?? '';
+      _lokasiCtrl.text    = e.lokasi ?? '';
+      _deskripsiCtrl.text = e.deskripsi ?? '';
+      _kuotaCtrl.text     = e.kuota?.toString() ?? '0';
+      _jenisCtrl.text     = e.jenis ?? '';
+      _tanggalCtrl.text   = e.tanggal ?? '';
+      _imagePath = e.gambarPath;
     } else {
-      _judulController.clear();
-      _lokasiController.clear();
-      _deskripsiController.clear();
-      _kuotaController.clear();
-      _jenisController.clear();
-      _tanggalController.clear();
+      _judulCtrl.clear();
+      _lokasiCtrl.clear();
+      _deskripsiCtrl.clear();
+      _kuotaCtrl.clear();
+      _jenisCtrl.clear();
+      _tanggalCtrl.clear();
       _imagePath = null;
     }
 
@@ -95,10 +93,9 @@ class _Widget2State extends State<Widget2> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
+        builder: (context, setModal) => Padding(
           padding: EdgeInsets.only(
             top: 20,
             left: 20,
@@ -109,87 +106,160 @@ class _Widget2State extends State<Widget2> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Handle bar
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 Text(
                   id == null ? 'Tambah Lomba' : 'Edit Lomba',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  style: kTitleStyle.copyWith(fontSize: 18),
+                ),
+                const SizedBox(height: 12),
+
+                // Preview Gambar
+                _imagePath != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(_imagePath!),
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Container(
+                        height: 100,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.image_outlined, size: 36, color: Colors.grey),
+                            Text('Belum ada gambar', style: kSubtitleStyle),
+                          ],
+                        ),
+                      ),
+                const SizedBox(height: 8),
+
+                // Tombol Pilih Gambar
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await _pickImage();
+                      setModal(() {});
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kPrimaryColor,
+                      side: const BorderSide(color: kPrimaryColor),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.image_outlined),
+                    label: Text(id == null ? 'Pilih Gambar' : 'Update Gambar'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: _judulCtrl,
+                  decoration: decorationConstant(
+                    hintText: 'Judul Lomba',
+                    labelText: 'Judul',
+                    prefixIcon: Icons.emoji_events_outlined,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _lokasiCtrl,
+                  decoration: decorationConstant(
+                    hintText: 'Lokasi',
+                    labelText: 'Lokasi',
+                    prefixIcon: Icons.location_on_outlined,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _jenisCtrl,
+                  decoration: decorationConstant(
+                    hintText: 'Jenis Lomba',
+                    labelText: 'Jenis',
+                    prefixIcon: Icons.category_outlined,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _kuotaCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: decorationConstant(
+                    hintText: 'Kuota Peserta',
+                    labelText: 'Kuota',
+                    prefixIcon: Icons.people_outline,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _deskripsiCtrl,
+                  maxLines: 3,
+                  decoration: decorationConstant(
+                    hintText: 'Deskripsi lomba...',
+                    labelText: 'Deskripsi',
+                    prefixIcon: Icons.description_outlined,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _tanggalCtrl,
+                  readOnly: true,
+                  onTap: () => _selectDate(context),
+                  decoration: decorationConstant(
+                    hintText: 'Pilih tanggal lomba',
+                    labelText: 'Tanggal',
+                    prefixIcon: Icons.calendar_today_outlined,
+                  ).copyWith(
+                    suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Tombol Simpan / Update
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: kPrimaryButtonStyle(),
+                    onPressed: () async {
+                      final lomba = LombaModel(
+                        id: id,
+                        judul: _judulCtrl.text,
+                        lokasi: _lokasiCtrl.text,
+                        gambarPath: _imagePath,
+                        kuota: int.tryParse(_kuotaCtrl.text) ?? 0,
+                        jenis: _jenisCtrl.text,
+                        deskripsi: _deskripsiCtrl.text,
+                        tanggal: _tanggalCtrl.text,
+                      );
+                      id == null
+                          ? await LombaController.insertLomba(lomba)
+                          : await LombaController.updateLomba(lomba);
+                      await _refreshLomba();
+                      if (!mounted) return;
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(id == null ? 'Simpan' : 'Update'),
                   ),
                 ),
                 const SizedBox(height: 10),
-                _imagePath == null
-                    ? const Text("Belum ada gambar")
-                    : Image.file(File(_imagePath!), height: 100),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await _pickImage();
-                    setModalState(() {});
-                  },
-                  icon: const Icon(Icons.image),
-                  label: Text(id == null ? 'Pilih Gambar' : 'Update Gambar'),
-                ),
-                TextField(
-                  controller: _judulController,
-                  decoration: const InputDecoration(labelText: 'Judul Lomba'),
-                ),
-                TextField(
-                  controller: _lokasiController,
-                  decoration: const InputDecoration(labelText: 'Lokasi'),
-                ),
-                TextField(
-                  controller: _jenisController,
-                  decoration: const InputDecoration(labelText: 'Jenis'),
-                ),
-                TextField(
-                  controller: _kuotaController,
-                  decoration: const InputDecoration(labelText: 'Kuota'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: _deskripsiController,
-                  decoration: const InputDecoration(labelText: 'Deskripsi'),
-                ),
-                TextField(
-                  controller: _tanggalController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Tanggal Lomba',
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  onTap: () => _selectDate(context),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
-                  ),
-                  onPressed: () async {
-                    final lomba = LombaModel(
-                      id: id,
-                      judul: _judulController.text,
-                      lokasi: _lokasiController.text,
-                      gambarPath: _imagePath,
-                      kuota: int.tryParse(_kuotaController.text) ?? 0,
-                      jenis: _jenisController.text,
-                      deskripsi: _deskripsiController.text,
-                      tanggal: _tanggalController.text,
-                    );
-
-                    if (id == null) {
-                      await LombaController.insertLomba(lomba);
-                    } else {
-                      await LombaController.updateLomba(lomba);
-                    }
-
-                    await _refreshLomba();
-                    if (!mounted) return;
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    id == null ? 'Simpan' : 'Update',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
               ],
             ),
           ),
@@ -201,9 +271,12 @@ class _Widget2State extends State<Widget2> {
   void _deleteLomba(int id) async {
     await LombaController.deleteLomba(id);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Berhasil menghapus data')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Berhasil menghapus data'),
+        backgroundColor: Colors.red,
+      ),
+    );
     _refreshLomba();
   }
 
@@ -212,9 +285,21 @@ class _Widget2State extends State<Widget2> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          "Detail Kompetisi",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        // ✅ Flexible agar title tidak overflow
+        title: const Row(
+          children: [
+            Icon(Icons.emoji_events, color: kAccentColor),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                "Detail Kompetisi",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: kPrimaryColor,
+                ),
+              ),
+            ),
+          ],
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -222,41 +307,38 @@ class _Widget2State extends State<Widget2> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (lomba.gambarPath != null)
-                Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(File(lomba.gambarPath!), height: 200),
-                  ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(File(lomba.gambarPath!), height: 200),
                 ),
               const SizedBox(height: 10),
-              _detailRow("Judul", lomba.judul),
-              _detailRow("Lokasi", lomba.lokasi),
-              _detailRow("Jenis", lomba.jenis),
-              _detailRow("Kuota", lomba.kuota?.toString()),
-              _detailRow("Deskripsi", lomba.deskripsi),
-              _detailRow("Tanggal", lomba.tanggal),
+              _detailRow(Icons.emoji_events_outlined, "Judul",    lomba.judul),
+              _detailRow(Icons.location_on_outlined,  "Lokasi",   lomba.lokasi),
+              _detailRow(Icons.category_outlined,     "Jenis",    lomba.jenis),
+              _detailRow(Icons.people_outline,        "Kuota",    lomba.kuota?.toString()),
+              _detailRow(Icons.description_outlined,  "Deskripsi",lomba.deskripsi),
+              _detailRow(Icons.calendar_today_outlined,"Tanggal", lomba.tanggal),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Tutup",
-              style: TextStyle(color: Color(0xFF6366F1)),
-            ),
+            child: const Text("Tutup", style: TextStyle(color: kPrimaryColor)),
           ),
         ],
       ),
     );
   }
 
-  Widget _detailRow(String label, String? value) {
+  Widget _detailRow(IconData icon, String label, String? value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, size: 16, color: Colors.grey),
+          const SizedBox(width: 6),
           Text(
             "$label: ",
             style: const TextStyle(
@@ -286,11 +368,7 @@ class _Widget2State extends State<Widget2> {
             ),
             IconButton(
               onPressed: () => _showForm(null),
-              icon: const Icon(
-                Icons.add_circle,
-                color: Color(0xFF6366F1),
-                size: 30,
-              ),
+              icon: const Icon(Icons.add_circle, color: kPrimaryColor, size: 30),
             ),
           ],
         ),
@@ -303,68 +381,78 @@ class _Widget2State extends State<Widget2> {
                 itemCount: _allLomba.length,
                 itemBuilder: (context, index) {
                   final lomba = _allLomba[index];
-                  return Card(
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: ListTile(
-                      leading: InkWell(
-                        onTap: () => _showDetailDialog(context, lomba),
-                        child: lomba.gambarPath != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(lomba.gambarPath!),
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : const Icon(Icons.image_not_supported),
-                      ),
-                      title: Text(
-                        lomba.judul ?? '-',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(lomba.lokasi ?? '-'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.orange),
-                            onPressed: () => _showForm(lomba.id),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text("Konfirmasi"),
-                                content: const Text(
-                                  "Apakah Anda yakin ingin menghapus lomba ini?",
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text("Batal"),
+                    decoration: kCardDecoration(),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(kBorderRadius),
+                      child: ListTile(
+                        leading: InkWell(
+                          onTap: () => _showDetailDialog(context, lomba),
+                          child: lomba.gambarPath != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    File(lomba.gambarPath!),
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
                                   ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
+                                )
+                              : const Icon(Icons.image_not_supported),
+                        ),
+                        title: Text(
+                          lomba.judul ?? '-',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(lomba.lokasi ?? '-', style: kSubtitleStyle),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.orange),
+                              onPressed: () => _showForm(lomba.id),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20)),
+                                  // ✅ Flexible pada dialog hapus
+                                  title: const Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text("Konfirmasi Hapus"),
+                                      ),
+                                    ],
+                                  ),
+                                  content: const Text(
+                                      "Apakah Anda yakin ingin menghapus lomba ini?"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("Batal",
+                                          style: TextStyle(color: Colors.grey)),
                                     ),
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _deleteLomba(lomba.id!);
-                                    },
-                                    child: const Text("Hapus"),
-                                  ),
-                                ],
+                                    ElevatedButton(
+                                      style: kDangerButtonStyle(),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        _deleteLomba(lomba.id!);
+                                      },
+                                      child: const Text("Hapus"),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );

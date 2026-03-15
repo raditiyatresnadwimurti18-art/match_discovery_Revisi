@@ -168,6 +168,22 @@ class RiwayatController {
     );
     return Sqflite.firstIntValue(res) ?? 0;
   }
+  static Future<List<Map<String, dynamic>>> getTrackRecordPerLomba(
+  int userId,
+) async {
+  final dbs = await DBHelper.db();
+  return await dbs.rawQuery(
+    '''
+    SELECT
+      judulLomba,
+      tanggalSelesai
+    FROM riwayatSelesai
+    WHERE idUser = ?
+    ORDER BY tanggalSelesai DESC
+    ''',
+    [userId],
+  );
+}
 
   // ==================== RIWAYAT EVENT ====================
 

@@ -1,15 +1,14 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/user.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_user/profil.dart';
 import 'package:match_discovery/home_user/event_berlalu.dart';
 import 'package:match_discovery/home_user/history_user.dart';
 import 'package:match_discovery/home_user/isi_home_user.dart';
 import 'package:match_discovery/models/login_model.dart';
+import 'package:match_discovery/util/app_theme.dart';
 
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
@@ -28,9 +27,7 @@ class _HomeUserState extends State<HomeUser> {
   int _selectIndex = 0;
   LoginModel? _user;
 
-  void _ketikaDitekan(int index) {
-    setState(() => _selectIndex = index);
-  }
+  void _ketikaDitekan(int index) => setState(() => _selectIndex = index);
 
   @override
   void initState() {
@@ -38,11 +35,16 @@ class _HomeUserState extends State<HomeUser> {
     _fetchUserData();
   }
 
+  // ✅ Fix 1: tambah mounted check + try-catch
   Future<void> _fetchUserData() async {
     int? id = await PreferenceHandler.getId();
-    if (id != null) {
+    if (id == null) return;
+    try {
       LoginModel? data = await UserController.getUserById(id);
+      if (!mounted) return; // ✅
       setState(() => _user = data);
+    } catch (e) {
+      debugPrint('Error fetchUserData: $e');
     }
   }
 
@@ -64,14 +66,17 @@ class _HomeUserState extends State<HomeUser> {
           'Discovery',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: const Color(0xff0f2a55),
+        backgroundColor: kPrimaryColor,
+        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
-              onTap: () {
-                context.push(ProfilUser()).then((_) => _fetchUserData());
-              },
+              // ✅ Fix 2: Navigator.push bukan context.push
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ProfilUser()),
+              ).then((_) => _fetchUserData()),
               child: Container(
                 width: 38,
                 height: 38,
@@ -80,8 +85,7 @@ class _HomeUserState extends State<HomeUser> {
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: ClipOval(
-                  child:
-                      _user?.profilePath != null &&
+                  child: _user?.profilePath != null &&
                           _user!.profilePath!.isNotEmpty
                       ? Image.file(
                           File(_user!.profilePath!),
@@ -105,7 +109,7 @@ class _HomeUserState extends State<HomeUser> {
 
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xff0f2a55),
+        selectedItemColor: kPrimaryColor,
         unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

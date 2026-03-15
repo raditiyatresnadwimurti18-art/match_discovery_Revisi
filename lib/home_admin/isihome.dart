@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:match_discovery/home_admin/widget_home/widget2.dart';
+import 'package:match_discovery/util/app_theme.dart';
 
 class IsiHome extends StatefulWidget {
   const IsiHome({super.key});
@@ -12,18 +12,13 @@ class IsiHome extends StatefulWidget {
 class _IsiHomeState extends State<IsiHome> {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10),
-
-      child: SizedBox(
-        height: double.infinity,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.start, // Pastikan mulai dari atas
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Widget2()],
-          ),
+    return Container(
+      color: kBgColor,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [Widget2()],
         ),
       ),
     );
