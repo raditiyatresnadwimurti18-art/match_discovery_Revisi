@@ -56,7 +56,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
         child: Column(
           children: [
             SizedBox(height: 200),
-            Image.asset('assets/images/logof1.png', height: 200),
+            Image.asset('assets/images/logo.png', height: 200),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

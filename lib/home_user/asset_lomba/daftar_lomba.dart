@@ -5,6 +5,7 @@ import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/models/lomba_model.dart';
 import 'package:match_discovery/models/riwayat_model.dart';
+import 'package:match_discovery/util/app_theme.dart';
 
 class DaftarLomba extends StatefulWidget {
   const DaftarLomba({super.key});
@@ -14,43 +15,40 @@ class DaftarLomba extends StatefulWidget {
 }
 
 class _DaftarLombaState extends State<DaftarLomba> {
-  Future<List<LombaModel>> _lombaFuture = LombaController.getAllLomba();
+  late Future<List<LombaModel>> _lombaFuture;
 
   @override
   void initState() {
     super.initState();
+    _lombaFuture = LombaController.getAllLomba();
   }
 
-  void _refreshData() {
-    setState(() {
-      _lombaFuture = LombaController.getAllLomba();
-    });
-  }
+  void _refreshData() =>
+      setState(() => _lombaFuture = LombaController.getAllLomba());
 
   void _konfirmasiIkutiLomba(int lombaId) async {
     final userId = await PreferenceHandler.getId();
     if (userId == null) return;
 
-    await RiwayatController.ikutiLomba(
-      RiwayatModel(
-        idUser: userId,
-        idLomba: lombaId,
-        tanggalDaftar: DateTime.now().toIso8601String().split('T').first,
-      ),
-    );
+    await RiwayatController.ikutiLomba(RiwayatModel(
+      idUser: userId,
+      idLomba: lombaId,
+      tanggalDaftar: DateTime.now().toIso8601String().split('T').first,
+    ));
 
     _refreshData();
-
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Berhasil mengikuti lomba!")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Berhasil mengikuti lomba!"),
+        backgroundColor: Colors.green,
+      ),
+    );
     Navigator.pop(context);
   }
 
   void _showLombaDetail(BuildContext context, LombaModel lomba) async {
     final userId = await PreferenceHandler.getId();
-
     if (userId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,56 +57,75 @@ class _DaftarLombaState extends State<DaftarLomba> {
       return;
     }
 
-    final sedangIkut = await RiwayatController.isUserSedangIkutLomba(
-      userId,
-      lomba.id!,
-    );
-
+    final sedangIkut =
+        await RiwayatController.isUserSedangIkutLomba(userId, lomba.id!);
     if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Text(lomba.judul ?? "Detail Lomba"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        // ✅ Flexible agar title tidak overflow
+        title: Row(
+          children: [
+            const Icon(Icons.emoji_events, color: kAccentColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                lomba.judul ?? "Detail Lomba",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: kPrimaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: lomba.gambarPath != null
-                    ? Image.file(File(lomba.gambarPath!))
-                    : Container(height: 100, color: Colors.grey),
-              ),
-              const SizedBox(height: 15),
-              _infoRow(Icons.category, "Jenis", lomba.jenis),
-              _infoRow(Icons.calendar_today, "Tanggal", lomba.tanggal),
-              _infoRow(Icons.location_on, "Lokasi", lomba.lokasi),
-              _infoRow(Icons.people, "Kuota", "${lomba.kuota ?? 0}"),
-              const Divider(),
-              const Text(
-                "Deskripsi:",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              Text(lomba.deskripsi ?? "Tidak ada deskripsi."),
+              if (lomba.gambarPath != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(File(lomba.gambarPath!),
+                      width: double.infinity, height: 160, fit: BoxFit.cover),
+                )
+              else
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                      child: Icon(Icons.image_not_supported, color: Colors.grey)),
+                ),
+              const SizedBox(height: 14),
+              _infoRow(Icons.category_outlined,      "Jenis",   lomba.jenis),
+              _infoRow(Icons.calendar_today_outlined, "Tanggal", lomba.tanggal),
+              _infoRow(Icons.location_on_outlined,    "Lokasi",  lomba.lokasi),
+              _infoRow(Icons.people_outline,          "Kuota",   "${lomba.kuota ?? 0}"),
+              const Divider(height: 20),
+              const Text("Deskripsi:",
+                  style: TextStyle(fontWeight: FontWeight.bold, color: kPrimaryColor)),
+              const SizedBox(height: 6),
+              Text(lomba.deskripsi ?? "Tidak ada deskripsi.",
+                  style: kSubtitleStyle.copyWith(color: Colors.black87)),
             ],
           ),
         ),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Tutup"),
+            child: const Text("Tutup", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: sedangIkut
-                ? null
-                : () => _konfirmasiIkutiLomba(lomba.id!),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sedangIkut ? Colors.grey : Colors.blue,
-            ),
+            onPressed: sedangIkut ? null : () => _konfirmasiIkutiLomba(lomba.id!),
+            style: sedangIkut
+                ? ElevatedButton.styleFrom(backgroundColor: Colors.grey)
+                : kPrimaryButtonStyle(radius: 12),
             child: Text(sedangIkut ? "Sudah Terdaftar" : "Daftar Sekarang"),
           ),
         ],
@@ -121,9 +138,14 @@ class _DaftarLombaState extends State<DaftarLomba> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.blue),
+          Icon(icon, size: 16, color: kPrimaryColor),
           const SizedBox(width: 8),
-          Expanded(child: Text("$label: ${value ?? '-'}")),
+          Text("$label: ",
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          Expanded(
+            child: Text(value ?? '-',
+                style: const TextStyle(fontSize: 13, color: Colors.black87)),
+          ),
         ],
       ),
     );
@@ -135,13 +157,32 @@ class _DaftarLombaState extends State<DaftarLomba> {
       future: _lombaFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+              child: CircularProgressIndicator(color: kPrimaryColor));
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("Tidak ada data lomba"));
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(
+                        color: Colors.grey.withOpacity(0.1), blurRadius: 16)],
+                  ),
+                  child: const Icon(Icons.inbox_outlined,
+                      size: 48, color: kPrimaryColor),
+                ),
+                const SizedBox(height: 12),
+                const Text("Tidak ada data lomba",
+                    style: TextStyle(color: Colors.grey, fontSize: 15)),
+              ],
+            ),
+          );
         }
-
-        final listLomba = snapshot.data!;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -153,78 +194,63 @@ class _DaftarLombaState extends State<DaftarLomba> {
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
           ),
-          itemCount: listLomba.length,
+          itemCount: snapshot.data!.length,
           itemBuilder: (context, index) {
-            final lomba = listLomba[index];
+            final lomba = snapshot.data![index];
             return InkWell(
               onTap: () => _showLombaDetail(context, lomba),
               child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 2,
-                      blurRadius: 5,
-                    ),
-                  ],
-                ),
+                decoration: kCardDecoration(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Gambar
                     Expanded(
                       child: ClipRRect(
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
-                        child:
-                            (lomba.gambarPath != null &&
-                                lomba.gambarPath!.isNotEmpty)
+                            top: Radius.circular(kBorderRadius)),
+                        child: lomba.gambarPath != null &&
+                                lomba.gambarPath!.isNotEmpty
                             ? Image.file(
                                 File(lomba.gambarPath!),
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.broken_image),
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.broken_image,
+                                      color: Colors.grey),
                                 ),
                               )
                             : Container(
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.image),
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.image,
+                                    color: Colors.grey),
                               ),
                       ),
                     ),
+                    // Info
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             lomba.judul ?? "Tanpa Judul",
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                                fontWeight: FontWeight.bold, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(
-                                Icons.people,
-                                size: 14,
-                                color: Colors.blue,
-                              ),
+                              const Icon(Icons.people_outline,
+                                  size: 13, color: kPrimaryColor),
                               const SizedBox(width: 4),
                               Text(
                                 "Kuota: ${lomba.kuota ?? 0}",
                                 style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 12,
-                                ),
+                                    color: Colors.grey[700], fontSize: 11),
                               ),
                             ],
                           ),

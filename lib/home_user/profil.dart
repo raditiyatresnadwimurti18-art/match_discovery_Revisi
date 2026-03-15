@@ -26,7 +26,6 @@ class _ProfilUserState extends State<ProfilUser> {
     _fetchUserData();
   }
 
-  // ✅ Fix: mounted check + try-catch
   Future<void> _fetchUserData() async {
     int? id = await PreferenceHandler.getId();
     if (id == null) return;
@@ -43,7 +42,7 @@ class _ProfilUserState extends State<ProfilUser> {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && _user != null) {
       await UserController.updateUserProfile(_user!.id!, image.path);
-      await _fetchUserData(); // ✅ await
+      await _fetchUserData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto profil berhasil diperbarui')),
@@ -54,14 +53,14 @@ class _ProfilUserState extends State<ProfilUser> {
   void _showEditProfileDialog() {
     if (_user == null) return;
 
-    final namaCtrl     = TextEditingController(text: _user!.nama);
-    final emailCtrl    = TextEditingController(text: _user!.email);
-    final telpCtrl     = TextEditingController(text: _user!.tlpon);
-    final kotaCtrl     = TextEditingController(text: _user!.asalKota);
-    final sekolahCtrl  = TextEditingController(text: _user!.asalSekolah);
+    final namaCtrl    = TextEditingController(text: _user!.nama);
+    final emailCtrl   = TextEditingController(text: _user!.email);
+    final telpCtrl    = TextEditingController(text: _user!.tlpon);
+    final kotaCtrl    = TextEditingController(text: _user!.asalKota);
+    final sekolahCtrl = TextEditingController(text: _user!.asalSekolah);
     String? selectedPendidikan = _user!.pendidikanTerakhir;
     const listPendidikan = ['SMP', 'SMA/SMK', 'D3', 'S1', 'S2'];
-    final outerContext = context; // ✅ simpan outerContext
+    final outerContext = context;
 
     showDialog(
       context: outerContext,
@@ -73,13 +72,9 @@ class _ProfilUserState extends State<ProfilUser> {
               Icon(Icons.edit, color: kPrimaryColor),
               SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  "Edit Profil",
-                  style: TextStyle(
-                    color: kPrimaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Text("Edit Profil",
+                    style: TextStyle(
+                        color: kPrimaryColor, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -103,7 +98,6 @@ class _ProfilUserState extends State<ProfilUser> {
                 TextField(controller: sekolahCtrl,
                     decoration: decorationConstant(hintText: 'Asal Sekolah/Univ', labelText: 'Sekolah', prefixIcon: Icons.school_outlined)),
                 const SizedBox(height: 12),
-                // ✅ Dropdown pakai style dekorasi yang sama
                 DropdownButtonFormField<String>(
                   value: listPendidikan.contains(selectedPendidikan)
                       ? selectedPendidikan
@@ -140,12 +134,10 @@ class _ProfilUserState extends State<ProfilUser> {
                   pendidikanTerakhir: selectedPendidikan ?? "",
                   asalSekolah: sekolahCtrl.text,
                 );
-                // ✅ pakai dialogContext untuk pop
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 await _fetchUserData();
                 if (!mounted) return;
-                // ✅ pakai outerContext untuk SnackBar
                 ScaffoldMessenger.of(outerContext).showSnackBar(
                   const SnackBar(content: Text("Profil diperbarui!")),
                 );
@@ -174,12 +166,11 @@ class _ProfilUserState extends State<ProfilUser> {
           children: [
             _buildHeader(),
             const SizedBox(height: 12),
-            // Info tiles
-            _buildInfoTile(Icons.email_outlined,        "Email",      _user?.email),
-            _buildInfoTile(Icons.phone_outlined,        "Telepon",    _user?.tlpon),
-            _buildInfoTile(Icons.location_city_outlined,"Asal Kota",  _user?.asalKota),
-            _buildInfoTile(Icons.school_outlined,       "Asal Sekolah",_user?.asalSekolah),
-            _buildInfoTile(Icons.history_edu_outlined,  "Pendidikan", _user?.pendidikanTerakhir),
+            _buildInfoTile(Icons.email_outlined,         "Email",       _user?.email),
+            _buildInfoTile(Icons.phone_outlined,         "Telepon",     _user?.tlpon),
+            _buildInfoTile(Icons.location_city_outlined, "Asal Kota",   _user?.asalKota),
+            _buildInfoTile(Icons.school_outlined,        "Asal Sekolah",_user?.asalSekolah),
+            _buildInfoTile(Icons.history_edu_outlined,   "Pendidikan",  _user?.pendidikanTerakhir),
             const SizedBox(height: 20),
             _buildEditButton(),
             _buildLogoutButton(),
@@ -215,9 +206,10 @@ class _ProfilUserState extends State<ProfilUser> {
                 child: ClipOval(
                   child: _user?.profilePath != null &&
                           _user!.profilePath!.isNotEmpty
-                      ? Image.file(File(_user!.profilePath!), fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.person, size: 60, color: kPrimaryColor))
+                      ? Image.file(File(_user!.profilePath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person, size: 60, color: kPrimaryColor))
                       : const Icon(Icons.person, size: 60, color: kPrimaryColor),
                 ),
               ),
@@ -228,10 +220,9 @@ class _ProfilUserState extends State<ProfilUser> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: const BoxDecoration(
-                      color: kAccentColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                        color: kAccentColor, shape: BoxShape.circle),
+                    child: const Icon(Icons.camera_alt,
+                        color: Colors.white, size: 18),
                   ),
                 ),
               ),
@@ -262,42 +253,36 @@ class _ProfilUserState extends State<ProfilUser> {
     );
   }
 
-  Widget _buildEditButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      child: SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton.icon(
-          onPressed: _showEditProfileDialog,
-          icon: const Icon(Icons.edit),
-          label: const Text("Edit Profil"),
-          style: kPrimaryButtonStyle(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      child: SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: OutlinedButton.icon(
-          onPressed: _showLogoutDialog,
-          icon: const Icon(Icons.logout),
-          label: const Text("Keluar"),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.red,
-            side: const BorderSide(color: Colors.red),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+  Widget _buildEditButton() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        child: SizedBox(
+          width: double.infinity, height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _showEditProfileDialog,
+            icon: const Icon(Icons.edit),
+            label: const Text("Edit Profil"),
+            style: kPrimaryButtonStyle(),
           ),
         ),
-      ),
-    );
-  }
+      );
+
+  Widget _buildLogoutButton() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        child: SizedBox(
+          width: double.infinity, height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _showLogoutDialog,
+            icon: const Icon(Icons.logout),
+            label: const Text("Keluar"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ),
+      );
 
   void _showLogoutDialog() {
     final outerContext = context;
@@ -309,8 +294,10 @@ class _ProfilUserState extends State<ProfilUser> {
           children: [
             Icon(Icons.logout, color: Colors.red),
             SizedBox(width: 8),
-            Flexible(child: Text("Konfirmasi Keluar",
-                style: TextStyle(fontWeight: FontWeight.bold))),
+            Flexible(
+              child: Text("Konfirmasi Keluar",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
         content: const Text("Apakah kamu yakin ingin keluar?"),
