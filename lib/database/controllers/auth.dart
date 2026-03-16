@@ -7,14 +7,27 @@ import 'package:sqflite/sqflite.dart';
 class AuthController {
   // ==================== USER ====================
 
-  static Future<void> registerUser(LoginModel user) async {
+  /// ✅ FIX: Return false jika email sudah terdaftar, true jika berhasil
+  static Future<bool> registerUser(LoginModel user) async {
     final dbs = await DBHelper.db();
+
+    // Cek apakah email sudah dipakai
+    final existing = await dbs.query(
+      'user',
+      where: 'email = ?',
+      whereArgs: [user.email],
+    );
+
+    // ✅ Jika sudah ada → tolak registrasi
+    if (existing.isNotEmpty) return false;
+
     await dbs.insert(
       'user',
       user.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      conflictAlgorithm: ConflictAlgorithm.abort,
     );
-    print(user.toMap());
+
+    return true;
   }
 
   static Future<LoginModel?> loginUser({
@@ -29,6 +42,9 @@ class AuthController {
     );
     if (result.isNotEmpty) {
       final data = LoginModel.fromMap(result.first);
+
+      // ✅ Set role dulu sebelum simpan ID
+      await PreferenceHandler.setRole('user');
       await PreferenceHandler.storingUserId(data.id!);
       await PreferenceHandler.storingIsLogin(true);
 
@@ -51,14 +67,9 @@ class AuthController {
     );
     if (result.isNotEmpty) {
       final admin = AdminModel.fromMap(result.first);
-
-      // ✅ FIX: Set role DULU sebelum menyimpan ID
       await PreferenceHandler.setRole('admin');
-      await PreferenceHandler.storingAdminId(
-        admin.id!,
-      ); // ← pakai key khusus admin
+      await PreferenceHandler.storingAdminId(admin.id!);
       await PreferenceHandler.storingIsLogin(true);
-
       return admin;
     }
     return null;
@@ -75,7 +86,6 @@ class AuthController {
       whereArgs: [username, password],
     );
     if (result.isNotEmpty) {
-      // ✅ FIX: Set role DULU sebelum menyimpan ID
       await PreferenceHandler.setRole('admin');
       await PreferenceHandler.storingAdminId(result.first['id'] as int);
       await PreferenceHandler.storingIsLogin(true);
