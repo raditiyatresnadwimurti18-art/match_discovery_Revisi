@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/extension/navigator.dart';
@@ -20,25 +21,22 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
   }
 
   Future<void> _autoLogin() async {
-    await Future.delayed(const Duration(seconds: 2));
+    // ✅ Durasi splash diperpanjang sedikit agar animasi selesai
+    await Future.delayed(const Duration(milliseconds: 3000));
     if (!mounted) return;
 
     final bool? isLogin = await PreferenceHandler.getIsLogin();
-    final String? role = await PreferenceHandler.getRole();
+    final String? role  = await PreferenceHandler.getRole();
 
     if (!mounted) return;
 
     if (role == 'admin' && isLogin == true) {
-      // ✅ Admin yang sudah login → Dashboard Admin
       context.pushAndRemoveAll(const Home());
     } else if (role == 'user' && isLogin == true) {
-      // ✅ User biasa yang sudah login → Home User
       context.pushAndRemoveAll(const HomeUser());
     } else if (role == 'guest') {
-      // ✅ Tamu (masuk tanpa akun) → Home User tapi tanpa sesi login
       context.pushAndRemoveAll(const HomeUser());
     } else {
-      // ✅ Belum pernah login sama sekali → Halaman Welcome
       context.pushAndRemoveAll(const Login());
     }
   }
@@ -51,33 +49,68 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/logo.png', height: 200),
-            const SizedBox(height: 16),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Discovery',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 28,
-                    color: Color(0xffcdb060),
-                  ),
-                ),
-                Text(
-                  'Match',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 28,
-                    color: Color(0xff112955),
-                  ),
-                ),
-              ],
+            // ✅ Logo — zoom in dari kecil
+            ZoomIn(
+              duration: const Duration(milliseconds: 700),
+              child: Image.asset('assets/images/logo.png', height: 200),
             ),
-            const SizedBox(height: 40),
-            const CircularProgressIndicator(
-              color: Color(0xff112955),
-              strokeWidth: 2.5,
+
+            const SizedBox(height: 16),
+
+            // ✅ Teks "Discovery" — slide dari kiri
+            FadeInLeft(
+              delay: const Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 600),
+              child: const Text(
+                'Discovery',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 28,
+                  color: Color(0xffcdb060),
+                ),
+              ),
+            ),
+
+            // ✅ Teks "Match" — slide dari kanan
+            FadeInRight(
+              delay: const Duration(milliseconds: 600),
+              duration: const Duration(milliseconds: 600),
+              child: const Text(
+                'Match',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 28,
+                  color: Color(0xff112955),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ✅ Tagline — fade in dari bawah
+            FadeInUp(
+              delay: const Duration(milliseconds: 800),
+              duration: const Duration(milliseconds: 500),
+              child: const Text(
+                'Temukan lomba, raih prestasi',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 48),
+
+            // ✅ Loading indicator — fade in terakhir
+            FadeIn(
+              delay: const Duration(milliseconds: 1000),
+              duration: const Duration(milliseconds: 400),
+              child: const CircularProgressIndicator(
+                color: Color(0xff112955),
+                strokeWidth: 2.5,
+              ),
             ),
           ],
         ),

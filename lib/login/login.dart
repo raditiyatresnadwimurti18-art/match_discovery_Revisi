@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/auth.dart';
 import 'package:match_discovery/database/preferences.dart';
@@ -27,8 +28,7 @@ class _LoginState extends State<Login> {
         builder: (dialogContext, setStateDialog) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
+                borderRadius: BorderRadius.circular(20)),
             title: const Row(
               children: [
                 Icon(Icons.admin_panel_settings, color: kPrimaryColor),
@@ -37,9 +37,7 @@ class _LoginState extends State<Login> {
                   child: Text(
                     "Login Admin",
                     style: TextStyle(
-                      color: kPrimaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: kPrimaryColor, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -59,34 +57,30 @@ class _LoginState extends State<Login> {
                 TextField(
                   controller: passAdmin,
                   obscureText: !isPasswordVisible,
-                  decoration:
-                      decorationConstant(
-                        hintText: 'Password',
-                        labelText: 'Password',
-                        prefixIcon: Icons.lock_outline,
-                      ).copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.grey,
-                          ),
-                          onPressed: () => setStateDialog(
-                            () => isPasswordVisible = !isPasswordVisible,
-                          ),
-                        ),
+                  decoration: decorationConstant(
+                    hintText: 'Password',
+                    labelText: 'Password',
+                    prefixIcon: Icons.lock_outline,
+                  ).copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: Colors.grey,
                       ),
+                      onPressed: () => setStateDialog(
+                          () => isPasswordVisible = !isPasswordVisible),
+                    ),
+                  ),
                 ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text(
-                  "Batal",
-                  style: TextStyle(color: Colors.grey),
-                ),
+                child: const Text("Batal",
+                    style: TextStyle(color: Colors.grey)),
               ),
               ElevatedButton(
                 style: kPrimaryButtonStyle(radius: 12),
@@ -98,7 +92,6 @@ class _LoginState extends State<Login> {
 
                   if (adminData != null) {
                     await PreferenceHandler.setRole('admin');
-
                     await PreferenceHandler.storingAdminId(adminData.id!);
                     await PreferenceHandler.storingIsLogin(true);
 
@@ -107,14 +100,11 @@ class _LoginState extends State<Login> {
 
                     if (!outerContext.mounted) return;
                     outerContext.pushAndRemoveAll(const Home());
-                    ScaffoldMessenger.of(outerContext).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "Selamat Datang, ${adminData.nama ?? 'Admin'}!",
-                        ),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                    ScaffoldMessenger.of(outerContext).showSnackBar(SnackBar(
+                      content: Text(
+                          "Selamat Datang, ${adminData.nama ?? 'Admin'}!"),
+                      backgroundColor: Colors.green,
+                    ));
                   } else {
                     if (!dialogContext.mounted) return;
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -139,40 +129,40 @@ class _LoginState extends State<Login> {
     required Color color,
     required String title,
     required String desc,
+    required int delayMs,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: color.withAlpha(45),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    desc,
-                    style: kSubtitleStyle.copyWith(color: Colors.black87),
-                    textAlign: TextAlign.justify,
-                  ),
-                ],
+    return FadeInLeft(
+      delay: Duration(milliseconds: delayMs),
+      duration: const Duration(milliseconds: 500),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: color.withAlpha(45),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black)),
+                    const SizedBox(height: 4),
+                    Text(desc,
+                        style: kSubtitleStyle.copyWith(color: Colors.black87),
+                        textAlign: TextAlign.justify),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -187,37 +177,50 @@ class _LoginState extends State<Login> {
         child: Column(
           children: [
             // ── Header ─────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 60, bottom: 24),
-              decoration: kHeaderDecoration,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 12,
-                          offset: const Offset(1, 4),
+            // ✅ Header slide dari atas
+            FadeInDown(
+              duration: const Duration(milliseconds: 700),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 60, bottom: 24),
+                decoration: kHeaderDecoration,
+                child: Column(
+                  children: [
+                    // ✅ Logo zoom in
+                    ZoomIn(
+                      delay: const Duration(milliseconds: 200),
+                      duration: const Duration(milliseconds: 600),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 12,
+                              offset: const Offset(1, 4),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Image.asset('assets/images/logo.png',
+                            height: 150),
+                      ),
                     ),
-                    child: Image.asset('assets/images/logo.png', height: 150),
-                  ),
-                  const SizedBox(height: 20),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      'Platform terpercaya untuk menemukan partner dan info kompetisi terbaik.',
-                      style: kWhiteSubStyle,
-                      textAlign: TextAlign.center,
+                    const SizedBox(height: 20),
+                    // ✅ Tagline fade in
+                    FadeIn(
+                      delay: const Duration(milliseconds: 500),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          'Platform terpercaya untuk menemukan partner dan info kompetisi terbaik.',
+                          style: kWhiteSubStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -231,24 +234,24 @@ class _LoginState extends State<Login> {
                     icon: Icons.people,
                     color: kPrimaryColor,
                     title: 'Cari Partner Lomba',
-                    desc:
-                        'Temukan rekan tim yang memiliki keahlian dan visi yang sama untuk menang.',
+                    desc: 'Temukan rekan tim yang memiliki keahlian dan visi yang sama untuk menang.',
+                    delayMs: 400,
                   ),
                   const SizedBox(height: 14),
                   _featureCard(
                     icon: Icons.search,
                     color: Colors.red,
                     title: 'Temukan Info Lomba',
-                    desc:
-                        'Dapatkan update kompetisi nasional hingga internasional secara real-time.',
+                    desc: 'Dapatkan update kompetisi nasional hingga internasional secara real-time.',
+                    delayMs: 550,
                   ),
                   const SizedBox(height: 14),
                   _featureCard(
                     icon: Icons.message,
                     color: Colors.green,
                     title: 'Terhubung dengan Peserta',
-                    desc:
-                        'Bangun koneksi dan diskusikan strategi dengan peserta dari berbagai daerah.',
+                    desc: 'Bangun koneksi dan diskusikan strategi dengan peserta dari berbagai daerah.',
+                    delayMs: 700,
                   ),
                 ],
               ),
@@ -256,34 +259,41 @@ class _LoginState extends State<Login> {
             const SizedBox(height: 24),
 
             // ── Tombol ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => context.push(Login1()),
-                      style: kPrimaryButtonStyle(),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [Text('Lanjut'), Icon(Icons.chevron_right)],
+            FadeInUp(
+              delay: const Duration(milliseconds: 800),
+              duration: const Duration(milliseconds: 500),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => context.push(Login1()),
+                        style: kPrimaryButtonStyle(),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Lanjut'),
+                            Icon(Icons.chevron_right),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () => _showAdminLoginDialog(context),
-                    child: Text(
-                      'Masuk sebagai Admin',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.bold,
+                    TextButton(
+                      onPressed: () => _showAdminLoginDialog(context),
+                      child: Text(
+                        'Masuk sebagai Admin',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
             ),
           ],
