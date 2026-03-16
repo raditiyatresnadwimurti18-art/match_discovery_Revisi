@@ -76,12 +76,27 @@ class RiwayatController {
   static Future<int> konfirmasiSelesaiManual(int userId, int lombaId) async {
     final dbs = await DBHelper.db();
 
+    // ✅ DEBUG
+    print("=== [konfirmasiSelesaiManual] userId=$userId, lombaId=$lombaId ===");
+
+    // Cek dulu apakah record ada di tabel riwayat
+    final cekRiwayat = await dbs.query(
+      'riwayat',
+      where: 'idUser = ? AND idLomba = ?',
+      whereArgs: [userId, lombaId],
+    );
+    print("=== [DEBUG] riwayat rows ditemukan: ${cekRiwayat.length} ===");
+    for (final r in cekRiwayat) {
+      print("=== [DEBUG] riwayat row: $r ===");
+    }
+
     final result = await dbs.update(
       'riwayat',
       {'status': 'selesai'},
       where: 'idUser = ? AND idLomba = ?',
       whereArgs: [userId, lombaId],
     );
+    print("=== [DEBUG] rows updated: $result ===");
 
     String? judulLomba;
     final lombaRes = await dbs.query(
@@ -91,6 +106,7 @@ class RiwayatController {
     );
     if (lombaRes.isNotEmpty) {
       judulLomba = lombaRes.first['judul'] as String?;
+      print("=== [DEBUG] judul dari lomba: $judulLomba ===");
     } else {
       final eventRes = await dbs.query(
         'riwayatEvent',
@@ -99,8 +115,13 @@ class RiwayatController {
       );
       if (eventRes.isNotEmpty) {
         judulLomba = eventRes.first['judul'] as String?;
+        print("=== [DEBUG] judul dari riwayatEvent: $judulLomba ===");
       }
     }
+
+    print(
+      "=== [DEBUG] insert riwayatSelesai: idUser=$userId, judul=$judulLomba ===",
+    );
 
     await dbs.insert(
       'riwayatSelesai',
@@ -110,6 +131,19 @@ class RiwayatController {
         tanggalSelesai: DateTime.now().toIso8601String().split('T').first,
       ).toMap(),
     );
+
+    // Verifikasi data tersimpan
+    final cekSelesai = await dbs.query(
+      'riwayatSelesai',
+      where: 'idUser = ?',
+      whereArgs: [userId],
+    );
+    print(
+      "=== [DEBUG] total riwayatSelesai untuk userId=$userId: ${cekSelesai.length} ===",
+    );
+    for (final r in cekSelesai) {
+      print("=== [DEBUG] riwayatSelesai row: $r ===");
+    }
 
     return result;
   }
@@ -168,22 +202,34 @@ class RiwayatController {
     );
     return Sqflite.firstIntValue(res) ?? 0;
   }
+
   static Future<List<Map<String, dynamic>>> getTrackRecordPerLomba(
-  int userId,
-) async {
-  final dbs = await DBHelper.db();
-  return await dbs.rawQuery(
-    '''
-    SELECT
-      judulLomba,
-      tanggalSelesai
-    FROM riwayatSelesai
-    WHERE idUser = ?
-    ORDER BY tanggalSelesai DESC
-    ''',
-    [userId],
-  );
-}
+    int userId,
+  ) async {
+    final dbs = await DBHelper.db();
+
+    // ✅ DEBUG
+    print("=== [getTrackRecordPerLomba] userId=$userId ===");
+
+    final result = await dbs.rawQuery(
+      '''
+      SELECT judulLomba, tanggalSelesai
+      FROM riwayatSelesai
+      WHERE idUser = ?
+      ORDER BY tanggalSelesai DESC
+      ''',
+      [userId],
+    );
+
+    print(
+      "=== [DEBUG] getTrackRecordPerLomba hasil: ${result.length} rows ===",
+    );
+    for (final r in result) {
+      print("=== [DEBUG] row: $r ===");
+    }
+
+    return result;
+  }
 
   // ==================== RIWAYAT EVENT ====================
 

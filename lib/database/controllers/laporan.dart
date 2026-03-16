@@ -10,10 +10,11 @@ class LaporanController {
         user.tlpon                      AS telepon_user,
         riwayat.tanggalDaftar
       FROM riwayat
-      INNER JOIN user           ON riwayat.idUser  = user.id
-      LEFT JOIN  lomba          ON riwayat.idLomba = lomba.id
+      INNER JOIN user            ON riwayat.idUser  = user.id
+      LEFT JOIN  lomba           ON riwayat.idLomba = lomba.id
       LEFT JOIN  riwayatEvent re ON riwayat.idLomba = re.idLombaAsli
       WHERE COALESCE(lomba.judul, re.judul) IS NOT NULL
+        AND riwayat.status = 'aktif'
       ORDER BY COALESCE(lomba.id, re.idLombaAsli) DESC
     ''');
   }
@@ -28,6 +29,7 @@ class LaporanController {
       FROM riwayat
       INNER JOIN user ON riwayat.idUser = user.id
       WHERE riwayat.idLomba = ?
+        AND riwayat.status = 'aktif'
       ''',
       [idLomba],
     );
@@ -40,6 +42,7 @@ class LaporanController {
       SELECT lomba.*, COUNT(riwayat.id) AS totalPendaftar
       FROM lomba
       LEFT JOIN riwayat ON lomba.id = riwayat.idLomba
+        AND riwayat.status = 'aktif'
       GROUP BY lomba.id
       ORDER BY lomba.id DESC
     ''');

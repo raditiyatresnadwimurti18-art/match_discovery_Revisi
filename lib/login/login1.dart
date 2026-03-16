@@ -19,7 +19,7 @@ class Login1 extends StatefulWidget {
 class _Login1State extends State<Login1> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-  final emailController    = TextEditingController();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -28,6 +28,16 @@ class _Login1State extends State<Login1> {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  // ✅ Login sebagai tamu — tidak perlu akun, langsung ke HomeUser
+  Future<void> _masukSebagaiTamu() async {
+    await PreferenceHandler.setRole('guest');
+    await PreferenceHandler.storingIsLogin(
+      false,
+    ); // tamu tidak dianggap login penuh
+    if (!mounted) return;
+    context.pushAndRemoveAll(HomeUser());
   }
 
   @override
@@ -52,6 +62,7 @@ class _Login1State extends State<Login1> {
               const SizedBox(height: 4),
               const Text('Selamat datang kembali!', style: kSubtitleStyle),
               const SizedBox(height: 24),
+
               Form(
                 key: _formKey,
                 child: Column(
@@ -61,7 +72,8 @@ class _Login1State extends State<Login1> {
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Email tidak boleh kosong';
+                        if (v == null || v.isEmpty)
+                          return 'Email tidak boleh kosong';
                         if (!v.contains('@')) return 'Email tidak valid';
                         return null;
                       },
@@ -78,69 +90,90 @@ class _Login1State extends State<Login1> {
                       controller: passwordController,
                       obscureText: !_isPasswordVisible,
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Password tidak boleh kosong';
+                        if (v == null || v.isEmpty)
+                          return 'Password tidak boleh kosong';
                         return null;
                       },
-                      decoration: decorationConstant(
-                        hintText: 'Password',
-                        labelText: 'Password',
-                        prefixIcon: Icons.lock_outline,
-                      ).copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.grey,
+                      decoration:
+                          decorationConstant(
+                            hintText: 'Password',
+                            labelText: 'Password',
+                            prefixIcon: Icons.lock_outline,
+                          ).copyWith(
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () => setState(
+                                () => _isPasswordVisible = !_isPasswordVisible,
+                              ),
+                            ),
                           ),
-                          onPressed: () =>
-                              setState(() => _isPasswordVisible = !_isPasswordVisible),
-                        ),
-                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 30),
 
-              // Tombol Masuk
+              // ── Tombol Masuk ──────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
+                  style: kPrimaryButtonStyle(),
                   onPressed: _isLoading
                       ? null
                       : () async {
                           if (!_formKey.currentState!.validate()) return;
                           setState(() => _isLoading = true);
 
-                          final LoginModel? login = await AuthController.loginUser(
-                            email: emailController.text,
-                            password: passwordController.text,
-                          );
+                          final LoginModel? login =
+                              await AuthController.loginUser(
+                                email: emailController.text,
+                                password: passwordController.text,
+                              );
 
                           if (!mounted) return;
                           setState(() => _isLoading = false);
 
                           if (login != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('Login Berhasil! Selamat Datang.'),
-                              backgroundColor: Colors.green,
-                            ));
+                            // ✅ FIX: Simpan sebagai user_id, bukan id umum
+                            await PreferenceHandler.setRole('user');
+                            await PreferenceHandler.storingUserId(login.id!);
+                            await PreferenceHandler.storingIsLogin(true);
+
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Login Berhasil! Selamat Datang.',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                             await Future.delayed(const Duration(seconds: 1));
                             if (!mounted) return;
-                            await PreferenceHandler.storingIsLogin(true);
                             context.pushAndRemoveAll(HomeUser());
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('Email atau Password salah!'),
-                              backgroundColor: Colors.red,
-                            ));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Email atau Password salah!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         },
-                  style: kPrimaryButtonStyle(),
                   child: _isLoading
                       ? const SizedBox(
-                          height: 20, width: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -150,7 +183,7 @@ class _Login1State extends State<Login1> {
               ),
               const SizedBox(height: 10),
 
-              // Tombol Lupa Password
+              // ── Tombol Lupa Password ──────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -160,24 +193,56 @@ class _Login1State extends State<Login1> {
                     side: const BorderSide(color: kPrimaryColor),
                     foregroundColor: kPrimaryColor,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(kBorderRadius - 2)),
+                      borderRadius: BorderRadius.circular(kBorderRadius - 2),
+                    ),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [Text('Lupa Password'), Icon(Icons.chevron_right)],
+                    children: [
+                      Text('Lupa Password'),
+                      Icon(Icons.chevron_right),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ── Tombol Masuk Tanpa Akun ───────────────────────
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: _masukSebagaiTamu,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey.shade400),
+                    foregroundColor: Colors.grey.shade700,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kBorderRadius - 2),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.person_outline, size: 18),
+                      SizedBox(width: 8),
+                      Text('Masuk Tanpa Akun'),
+                    ],
                   ),
                 ),
               ),
               const SizedBox(height: 8),
 
+              // ── Daftar Akun ───────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text('Belum punya akun?'),
                   TextButton(
                     onPressed: () => context.push(Reggister()),
-                    child: const Text('Daftar',
-                        style: TextStyle(color: kPrimaryColor)),
+                    child: const Text(
+                      'Daftar',
+                      style: TextStyle(color: kPrimaryColor),
+                    ),
                   ),
                 ],
               ),

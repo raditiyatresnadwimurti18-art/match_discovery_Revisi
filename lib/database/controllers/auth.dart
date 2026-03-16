@@ -29,9 +29,16 @@ class AuthController {
     );
     if (result.isNotEmpty) {
       final data = LoginModel.fromMap(result.first);
-      await PreferenceHandler.storingId(data.id!);
-      await PreferenceHandler.storingIsLogin(true);
+
+      // ✅ FIX: Set role DULU sebelum menyimpan ID
+      // Sebelumnya storingId dipanggil sebelum setRole,
+      // sehingga role masih null/admin → ID user tersimpan di key yang salah
       await PreferenceHandler.setRole('user');
+      await PreferenceHandler.storingUserId(
+        data.id!,
+      ); // ← pakai key khusus user
+      await PreferenceHandler.storingIsLogin(true);
+
       return data;
     }
     return null;
@@ -51,9 +58,14 @@ class AuthController {
     );
     if (result.isNotEmpty) {
       final admin = AdminModel.fromMap(result.first);
-      await PreferenceHandler.storingId(admin.id!);
-      await PreferenceHandler.storingIsLogin(true);
+
+      // ✅ FIX: Set role DULU sebelum menyimpan ID
       await PreferenceHandler.setRole('admin');
+      await PreferenceHandler.storingAdminId(
+        admin.id!,
+      ); // ← pakai key khusus admin
+      await PreferenceHandler.storingIsLogin(true);
+
       return admin;
     }
     return null;
@@ -70,9 +82,10 @@ class AuthController {
       whereArgs: [username, password],
     );
     if (result.isNotEmpty) {
-      await PreferenceHandler.storingId(result.first['id'] as int);
-      await PreferenceHandler.storingIsLogin(true);
+      // ✅ FIX: Set role DULU sebelum menyimpan ID
       await PreferenceHandler.setRole('admin');
+      await PreferenceHandler.storingAdminId(result.first['id'] as int);
+      await PreferenceHandler.storingIsLogin(true);
       return true;
     }
     return false;

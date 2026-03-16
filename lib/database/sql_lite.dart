@@ -5,7 +5,7 @@ class DBHelper {
   static Future<Database> db() async {
     final dbPath = await getDatabasesPath();
     return openDatabase(
-      join(dbPath, 'Match_Discovery_v15_final_db'),
+      join(dbPath, 'Match_Discovery_v16_final_db'),
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''

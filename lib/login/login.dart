@@ -6,7 +6,6 @@ import 'package:match_discovery/home_admin/home.dart';
 import 'package:match_discovery/login/login1.dart';
 import 'package:match_discovery/util/app_theme.dart';
 import 'package:match_discovery/util/decoration_form.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -28,7 +27,8 @@ class _LoginState extends State<Login> {
         builder: (dialogContext, setStateDialog) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Row(
               children: [
                 Icon(Icons.admin_panel_settings, color: kPrimaryColor),
@@ -59,30 +59,34 @@ class _LoginState extends State<Login> {
                 TextField(
                   controller: passAdmin,
                   obscureText: !isPasswordVisible,
-                  decoration: decorationConstant(
-                    hintText: 'Password',
-                    labelText: 'Password',
-                    prefixIcon: Icons.lock_outline,
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        color: Colors.grey,
+                  decoration:
+                      decorationConstant(
+                        hintText: 'Password',
+                        labelText: 'Password',
+                        prefixIcon: Icons.lock_outline,
+                      ).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () => setStateDialog(
+                            () => isPasswordVisible = !isPasswordVisible,
+                          ),
+                        ),
                       ),
-                      onPressed: () => setStateDialog(
-                          () => isPasswordVisible = !isPasswordVisible),
-                    ),
-                  ),
                 ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text("Batal",
-                    style: TextStyle(color: Colors.grey)),
+                child: const Text(
+                  "Batal",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               ElevatedButton(
                 style: kPrimaryButtonStyle(radius: 12),
@@ -94,20 +98,23 @@ class _LoginState extends State<Login> {
 
                   if (adminData != null) {
                     await PreferenceHandler.setRole('admin');
-                    await PreferenceHandler.storingId(adminData.id!);
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setString('admin_type', adminData.role);
+
+                    await PreferenceHandler.storingAdminId(adminData.id!);
+                    await PreferenceHandler.storingIsLogin(true);
 
                     if (!dialogContext.mounted) return;
                     Navigator.pop(dialogContext);
 
                     if (!outerContext.mounted) return;
-                    outerContext.push(const Home());
-                    ScaffoldMessenger.of(outerContext).showSnackBar(SnackBar(
-                      content: Text(
-                          "Selamat Datang, ${adminData.nama ?? 'Admin'}!"),
-                      backgroundColor: Colors.green,
-                    ));
+                    outerContext.pushAndRemoveAll(const Home());
+                    ScaffoldMessenger.of(outerContext).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "Selamat Datang, ${adminData.nama ?? 'Admin'}!",
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                   } else {
                     if (!dialogContext.mounted) return;
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -127,7 +134,6 @@ class _LoginState extends State<Login> {
     );
   }
 
-  // ✅ Fix: warna teks hitam agar terbaca di atas background berwarna
   Widget _featureCard({
     required IconData icon,
     required Color color,
@@ -154,15 +160,13 @@ class _LoginState extends State<Login> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black, // ✅ hitam
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     desc,
-                    style: kSubtitleStyle.copyWith(
-                      color: Colors.black87, // ✅ hitam
-                    ),
+                    style: kSubtitleStyle.copyWith(color: Colors.black87),
                     textAlign: TextAlign.justify,
                   ),
                 ],
@@ -202,10 +206,7 @@ class _LoginState extends State<Login> {
                         ),
                       ],
                     ),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      height: 150, // 
-                    ),
+                    child: Image.asset('assets/images/logo.png', height: 150),
                   ),
                   const SizedBox(height: 20),
                   const Padding(
@@ -230,21 +231,24 @@ class _LoginState extends State<Login> {
                     icon: Icons.people,
                     color: kPrimaryColor,
                     title: 'Cari Partner Lomba',
-                    desc: 'Temukan rekan tim yang memiliki keahlian dan visi yang sama untuk menang.',
+                    desc:
+                        'Temukan rekan tim yang memiliki keahlian dan visi yang sama untuk menang.',
                   ),
                   const SizedBox(height: 14),
                   _featureCard(
                     icon: Icons.search,
                     color: Colors.red,
                     title: 'Temukan Info Lomba',
-                    desc: 'Dapatkan update kompetisi nasional hingga internasional secara real-time.',
+                    desc:
+                        'Dapatkan update kompetisi nasional hingga internasional secara real-time.',
                   ),
                   const SizedBox(height: 14),
                   _featureCard(
                     icon: Icons.message,
                     color: Colors.green,
                     title: 'Terhubung dengan Peserta',
-                    desc: 'Bangun koneksi dan diskusikan strategi dengan peserta dari berbagai daerah.',
+                    desc:
+                        'Bangun koneksi dan diskusikan strategi dengan peserta dari berbagai daerah.',
                   ),
                 ],
               ),
@@ -264,10 +268,7 @@ class _LoginState extends State<Login> {
                       style: kPrimaryButtonStyle(),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Lanjut'),
-                          Icon(Icons.chevron_right),
-                        ],
+                        children: [Text('Lanjut'), Icon(Icons.chevron_right)],
                       ),
                     ),
                   ),
