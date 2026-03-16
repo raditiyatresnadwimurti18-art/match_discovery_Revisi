@@ -70,6 +70,14 @@ class _Widget2State extends State<Widget2> {
 
   void _showForm(int? id) {
     if (id != null) {
+      final e = _allLomba.firstWhere((e) => e.id == id);
+      _judulCtrl.text = e.judul ?? '';
+      _lokasiCtrl.text = e.lokasi ?? '';
+      _deskripsiCtrl.text = e.deskripsi ?? '';
+      _kuotaCtrl.text = e.kuota?.toString() ?? '0';
+      _jenisCtrl.text = e.jenis ?? '';
+      _tanggalCtrl.text = e.tanggal ?? '';
+      _imagePath = e.gambarPath;
     } else {
       _judulCtrl.clear();
       _lokasiCtrl.clear();

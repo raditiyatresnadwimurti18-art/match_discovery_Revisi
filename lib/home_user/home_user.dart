@@ -24,9 +24,9 @@ class _HomeUserState extends State<HomeUser> {
   ];
 
   final List<Map<String, dynamic>> _menuItems = [
-    {'label': 'Home',          'icon': Icons.home_rounded},
-    {'label': 'History',       'icon': Icons.history_rounded},
-    {'label': 'Event Terlewat','icon': Icons.event_rounded},
+    {'label': 'Home', 'icon': Icons.home_rounded},
+    {'label': 'History', 'icon': Icons.history_rounded},
+    {'label': 'Event Terlewat', 'icon': Icons.event_rounded},
   ];
 
   int _selectIndex = 0;
@@ -88,7 +88,8 @@ class _HomeUserState extends State<HomeUser> {
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: ClipOval(
-                  child: _user?.profilePath != null &&
+                  child:
+                      _user?.profilePath != null &&
                           _user!.profilePath!.isNotEmpty
                       ? Image.file(
                           File(_user!.profilePath!),
@@ -118,15 +119,17 @@ class _HomeUserState extends State<HomeUser> {
               accountName: Text(
                 _user?.nama ?? 'Pengguna',
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 16),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               accountEmail: Text(
                 _user?.email ?? '-',
                 style: const TextStyle(fontSize: 12),
               ),
               currentAccountPicture: ClipOval(
-                child: _user?.profilePath != null &&
-                        _user!.profilePath!.isNotEmpty
+                child:
+                    _user?.profilePath != null && _user!.profilePath!.isNotEmpty
                     ? Image.file(
                         File(_user!.profilePath!),
                         fit: BoxFit.cover,
@@ -149,7 +152,9 @@ class _HomeUserState extends State<HomeUser> {
                   final bool isSelected = _selectIndex == index;
                   return Container(
                     margin: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 3),
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? kPrimaryColor.withOpacity(0.1)
@@ -158,7 +163,8 @@ class _HomeUserState extends State<HomeUser> {
                     ),
                     child: ListTile(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       leading: Icon(
                         _menuItems[index]['icon'] as IconData,
                         color: isSelected ? kPrimaryColor : Colors.grey[600],
@@ -169,9 +175,7 @@ class _HomeUserState extends State<HomeUser> {
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color: isSelected
-                              ? kPrimaryColor
-                              : Colors.grey[800],
+                          color: isSelected ? kPrimaryColor : Colors.grey[800],
                         ),
                       ),
                       trailing: isSelected

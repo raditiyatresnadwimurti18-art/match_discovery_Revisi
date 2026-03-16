@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/data_user_lomba.dart';
 import 'package:match_discovery/home_admin/history_lomba.dart';
 import 'package:match_discovery/home_admin/isihome.dart';
@@ -22,7 +21,11 @@ class _HomeState extends State<Home> {
   int _selectIndex = 0;
   AdminModel? _admin;
 
-  static const List<Widget> _pages = <Widget>[
+  // ✅ FIX: Inisialisasi langsung di deklarasi (bukan late)
+  // 'late final' menyebabkan LateInitializationError jika build()
+  // dipanggil sebelum initState selesai mengisinya.
+  // Karena semua widget di sini adalah const, aman diinisialisasi langsung.
+  final List<Widget> _pages = const [
     IsiHome(),
     DataUserLomba(),
     HistoryLomba(),
@@ -30,9 +33,9 @@ class _HomeState extends State<Home> {
   ];
 
   final List<Map<String, dynamic>> _menuItems = [
-    {'label': 'Home',         'icon': Icons.home_rounded},
-    {'label': 'Data User',    'icon': Icons.verified_user_rounded},
-    {'label': 'History Lomba','icon': Icons.history_rounded},
+    {'label': 'Home', 'icon': Icons.home_rounded},
+    {'label': 'Data User', 'icon': Icons.verified_user_rounded},
+    {'label': 'History Lomba', 'icon': Icons.history_rounded},
     {'label': 'Track Record', 'icon': Icons.workspace_premium_rounded},
   ];
 
@@ -44,13 +47,13 @@ class _HomeState extends State<Home> {
     _fetchAdminData();
   }
 
-  // ✅ Fix: tambah mounted check
   Future<void> _fetchAdminData() async {
-    int? id = await PreferenceHandler.getId();
+    // ✅ FIX: Gunakan getAdminId() bukan getId()
+    final id = await PreferenceHandler.getAdminId();
     if (id == null) return;
     try {
-      AdminModel? data = await AdminController.getAdminById(id);
-      if (!mounted) return; // ✅
+      final data = await AdminController.getAdminById(id);
+      if (!mounted) return;
       setState(() => _admin = data);
     } catch (e) {
       debugPrint('Error fetchAdminData home: $e');
@@ -80,7 +83,6 @@ class _HomeState extends State<Home> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
-              // ✅ Fix: pakai Navigator.push bukan context.push
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ProfilAdmin()),
@@ -93,7 +95,8 @@ class _HomeState extends State<Home> {
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: ClipOval(
-                  child: _admin?.profilePath != null &&
+                  child:
+                      _admin?.profilePath != null &&
                           _admin!.profilePath!.isNotEmpty
                       ? Image.file(
                           File(_admin!.profilePath!),
@@ -120,25 +123,31 @@ class _HomeState extends State<Home> {
               decoration: const BoxDecoration(color: kPrimaryColor),
               accountName: Text(
                 _admin?.nama ?? 'Admin',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               accountEmail: Text(
                 _admin?.role == 'super' ? 'Super Admin' : 'Admin Staff',
                 style: const TextStyle(fontSize: 12),
               ),
               currentAccountPicture: ClipOval(
-                child: _admin?.profilePath != null &&
+                child:
+                    _admin?.profilePath != null &&
                         _admin!.profilePath!.isNotEmpty
                     ? Image.file(
                         File(_admin!.profilePath!),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.person, size: 50, color: Colors.white),
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person,
+                          size: 50,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.person, size: 50, color: Colors.white),
               ),
             ),
-
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.zero,
@@ -146,7 +155,10 @@ class _HomeState extends State<Home> {
                 itemBuilder: (context, index) {
                   final bool isSelected = _selectIndex == index;
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? kPrimaryColor.withOpacity(0.1)
@@ -155,7 +167,8 @@ class _HomeState extends State<Home> {
                     ),
                     child: ListTile(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       leading: Icon(
                         _menuItems[index]['icon'] as IconData,
                         color: isSelected ? kPrimaryColor : Colors.grey[600],

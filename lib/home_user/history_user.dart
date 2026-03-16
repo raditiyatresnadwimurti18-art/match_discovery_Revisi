@@ -25,7 +25,10 @@ class _HistoryUserState extends State<HistoryUser> {
   Future<void> _loadHistory() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    _userId = await PreferenceHandler.getId();
+
+    // ✅ FIX: Gunakan getUserId() agar tidak terkontaminasi ID admin
+    _userId = await PreferenceHandler.getUserId();
+
     if (_userId == null) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -49,8 +52,12 @@ class _HistoryUserState extends State<HistoryUser> {
           children: [
             Icon(Icons.check_circle_outline, color: Colors.green),
             SizedBox(width: 8),
-            Flexible(child: Text("Konfirmasi Selesai",
-                style: TextStyle(fontWeight: FontWeight.bold))),
+            Flexible(
+              child: Text(
+                "Konfirmasi Selesai",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
         content: Text('Apakah kamu sudah selesai mengikuti\n"$judulLomba"?'),
@@ -64,13 +71,20 @@ class _HistoryUserState extends State<HistoryUser> {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () async {
               if (!dialogContext.mounted) return;
               Navigator.pop(dialogContext);
-              await RiwayatController.konfirmasiSelesaiManual(_userId!, lombaId);
+
+              // ✅ FIX: Gunakan _userId yang sudah pasti ID user biasa
+              await RiwayatController.konfirmasiSelesaiManual(
+                _userId!,
+                lombaId,
+              );
               await _loadHistory();
+
               if (!mounted) return;
               ScaffoldMessenger.of(outerContext).showSnackBar(
                 SnackBar(
@@ -78,7 +92,8 @@ class _HistoryUserState extends State<HistoryUser> {
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               );
             },
@@ -94,20 +109,19 @@ class _HistoryUserState extends State<HistoryUser> {
     return Scaffold(
       backgroundColor: kBgColor,
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: kPrimaryColor))
+          ? const Center(child: CircularProgressIndicator(color: kPrimaryColor))
           : _historyList.isEmpty
-              ? _buildEmpty()
-              : RefreshIndicator(
-                  color: kPrimaryColor,
-                  onRefresh: _loadHistory,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
-                    itemCount: _historyList.length,
-                    itemBuilder: (context, index) =>
-                        _buildCard(_historyList[index]),
-                  ),
-                ),
+          ? _buildEmpty()
+          : RefreshIndicator(
+              color: kPrimaryColor,
+              onRefresh: _loadHistory,
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
+                itemCount: _historyList.length,
+                itemBuilder: (context, index) =>
+                    _buildCard(_historyList[index]),
+              ),
+            ),
     );
   }
 
@@ -121,18 +135,25 @@ class _HistoryUserState extends State<HistoryUser> {
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(
-                  color: Colors.grey.withOpacity(0.1), blurRadius: 20)],
+              boxShadow: [
+                BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 20),
+              ],
             ),
-            child: const Icon(Icons.history_toggle_off,
-                size: 56, color: kPrimaryColor),
+            child: const Icon(
+              Icons.history_toggle_off,
+              size: 56,
+              color: kPrimaryColor,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text('Belum ada riwayat pendaftaran.',
-              style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500)),
+          const Text(
+            'Belum ada riwayat pendaftaran.',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 4),
           const Text('Daftar lomba dulu yuk!', style: kSubtitleStyle),
         ],
@@ -141,11 +162,11 @@ class _HistoryUserState extends State<HistoryUser> {
   }
 
   Widget _buildCard(Map<String, dynamic> item) {
-    final judul   = (item['judul']   as String?) ?? 'Tanpa Judul';
-    final lokasi  = (item['lokasi']  as String?) ?? '-';
+    final judul = (item['judul'] as String?) ?? 'Tanpa Judul';
+    final lokasi = (item['lokasi'] as String?) ?? '-';
     final tanggal = (item['tanggal'] as String?) ?? '-';
-    final lombaId = item['idLomba']  as int;
-    final gambar  = item['gambarPath'] as String?;
+    final lombaId = item['idLomba'] as int;
+    final gambar = item['gambarPath'] as String?;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -161,23 +182,34 @@ class _HistoryUserState extends State<HistoryUser> {
                 bottomLeft: Radius.circular(kBorderRadius),
               ),
               child: gambar != null && gambar.isNotEmpty
-                  ? Image.file(File(gambar),
-                      width: 90, height: 90, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholderBox())
+                  ? Image.file(
+                      File(gambar),
+                      width: 90,
+                      height: 90,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _placeholderBox(),
+                    )
                   : _placeholderBox(),
             ),
             // Info
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(judul,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      judul,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 4),
                     _infoRow(Icons.location_on_outlined, lokasi),
                     const SizedBox(height: 2),
@@ -194,9 +226,12 @@ class _HistoryUserState extends State<HistoryUser> {
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: () => _showConfirmationDialog(lombaId, judul),
                 child: const Text("Selesai", style: TextStyle(fontSize: 12)),
@@ -209,20 +244,23 @@ class _HistoryUserState extends State<HistoryUser> {
   }
 
   Widget _placeholderBox() => Container(
-        width: 90, height: 90,
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.image_outlined, color: Colors.grey),
-      );
+    width: 90,
+    height: 90,
+    color: Colors.grey.shade200,
+    child: const Icon(Icons.image_outlined, color: Colors.grey),
+  );
 
   Widget _infoRow(IconData icon, String value) => Row(
-        children: [
-          Icon(icon, size: 12, color: Colors.grey),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(value,
-                style: kSubtitleStyle.copyWith(fontSize: 11),
-                overflow: TextOverflow.ellipsis),
-          ),
-        ],
-      );
+    children: [
+      Icon(icon, size: 12, color: Colors.grey),
+      const SizedBox(width: 4),
+      Expanded(
+        child: Text(
+          value,
+          style: kSubtitleStyle.copyWith(fontSize: 11),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ],
+  );
 }

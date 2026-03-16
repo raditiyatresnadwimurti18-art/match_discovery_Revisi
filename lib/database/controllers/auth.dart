@@ -29,14 +29,7 @@ class AuthController {
     );
     if (result.isNotEmpty) {
       final data = LoginModel.fromMap(result.first);
-
-      // ✅ FIX: Set role DULU sebelum menyimpan ID
-      // Sebelumnya storingId dipanggil sebelum setRole,
-      // sehingga role masih null/admin → ID user tersimpan di key yang salah
-      await PreferenceHandler.setRole('user');
-      await PreferenceHandler.storingUserId(
-        data.id!,
-      ); // ← pakai key khusus user
+      await PreferenceHandler.storingUserId(data.id!);
       await PreferenceHandler.storingIsLogin(true);
 
       return data;
