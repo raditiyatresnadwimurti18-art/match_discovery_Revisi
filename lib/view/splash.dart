@@ -26,7 +26,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
     if (!mounted) return;
 
     final bool? isLogin = await PreferenceHandler.getIsLogin();
-    final String? role  = await PreferenceHandler.getRole();
+    final String? role = await PreferenceHandler.getRole();
 
     if (!mounted) return;
 
@@ -35,7 +35,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
     } else if (role == 'user' && isLogin == true) {
       context.pushAndRemoveAll(const HomeUser());
     } else if (role == 'guest') {
-      context.pushAndRemoveAll(const HomeUser());
+      context.pushAndRemoveAll(const Login());
     } else {
       context.pushAndRemoveAll(const Login());
     }
