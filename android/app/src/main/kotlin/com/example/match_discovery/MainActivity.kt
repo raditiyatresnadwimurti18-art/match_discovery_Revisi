@@ -1,4 +1,4 @@
-package com.example.match_discovery
+package com.gacor.discovery_match
 
 import io.flutter.embedding.android.FlutterActivity
 
