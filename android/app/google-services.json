@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "365893474428",
+    "project_id": "discovery-match",
+    "storage_bucket": "discovery-match.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:365893474428:android:7f9b97eb50516b7c1691f9",
+        "android_client_info": {
+          "package_name": "com.gacor.discovery_match"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB126DK-uhfXyVCbKBSJfy_ocGwJEXagMA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:365893474428:android:f05b1dfc3fa16f9d1691f9",
+        "android_client_info": {
+          "package_name": "com.radit.absensi_raditya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB126DK-uhfXyVCbKBSJfy_ocGwJEXagMA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

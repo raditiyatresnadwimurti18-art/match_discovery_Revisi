@@ -17,6 +17,9 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   animate_do: ^4.2.0
   lottie: ^3.3.2
+  cloud_firestore: ^5.4.4 
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.3.1
 
 dev_dependencies:
   flutter_test:
