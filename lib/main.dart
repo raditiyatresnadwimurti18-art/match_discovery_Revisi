@@ -1,7 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/firebase_options.dart';
-import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/view/splash.dart';
 
 void main() async {
