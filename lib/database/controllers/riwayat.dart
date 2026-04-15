@@ -11,49 +11,89 @@ class RiwayatController {
 
   // ==================== PENDAFTARAN ====================
 
-  static Future<void> ikutiLomba(RiwayatModel riwayat) async {
+  static Future<Map<String, dynamic>> ikutiLomba(RiwayatModel riwayat) async {
     try {
-      await _firestore.runTransaction((transaction) async {
-        // Check if already following
+      return await _firestore.runTransaction((transaction) async {
+        // 1. Cek apakah user sudah terdaftar di lomba ini (status aktif)
         QuerySnapshot check = await _riwayatCollection
             .where('idUser', isEqualTo: riwayat.idUser)
             .where('idLomba', isEqualTo: riwayat.idLomba)
             .where('status', isEqualTo: 'aktif')
             .get();
 
-        if (check.docs.isNotEmpty) return;
+        if (check.docs.isNotEmpty) {
+          return {
+            'success': false,
+            'message': 'Anda sudah terdaftar di lomba ini.',
+          };
+        }
 
-        // Add to riwayat
-        DocumentReference riwayatDoc = _riwayatCollection.doc();
-        transaction.set(riwayatDoc, {
-          'idUser': riwayat.idUser,
-          'idLomba': riwayat.idLomba,
-          'tanggalDaftar': riwayat.tanggalDaftar ?? DateTime.now().toString(),
-          'status': 'aktif',
-        });
-
-        // Update kuota in lomba
+        // 2. Cek kuota lomba
         DocumentReference lombaRef = _lombaCollection.doc(riwayat.idLomba);
         DocumentSnapshot lombaSnap = await transaction.get(lombaRef);
 
-        if (lombaSnap.exists) {
-          int newKuota = (lombaSnap.get('kuota') as int) - 1;
-          transaction.update(lombaRef, {'kuota': newKuota});
-
-          if (newKuota <= 0) {
-            Map<String, dynamic> lombaData = lombaSnap.data() as Map<String, dynamic>;
-            lombaData['idLombaAsli'] = lombaSnap.id;
-            lombaData.remove('kuota');
-
-            // Move to riwayatEvent
-            transaction.set(_riwayatEventCollection.doc(lombaSnap.id), lombaData);
-            // Delete from lomba
-            transaction.delete(lombaRef);
-          }
+        if (!lombaSnap.exists) {
+          return {
+            'success': false,
+            'message': 'Lomba tidak ditemukan atau sudah ditutup.',
+          };
         }
+
+        int currentKuota = lombaSnap.get('kuota') as int;
+        if (currentKuota <= 0) {
+          return {
+            'success': false,
+            'message': 'Maaf, kuota lomba sudah penuh.',
+          };
+        }
+
+        // 3. Generate Token Unik (Bisa pakai Doc ID atau kombinasi)
+        DocumentReference riwayatDoc = _riwayatCollection.doc();
+        String token = "TKN-${riwayatDoc.id.substring(0, 8).toUpperCase()}";
+
+        // 4. Kurangi Kuota
+        int newKuota = currentKuota - 1;
+        transaction.update(lombaRef, {'kuota': newKuota});
+
+        // 5. Simpan ke Riwayat
+        transaction.set(riwayatDoc, {
+          'idUser': riwayat.idUser,
+          'idLomba': riwayat.idLomba,
+          'tanggalDaftar': riwayat.tanggalDaftar ?? DateTime.now().toIso8601String(),
+          'status': 'aktif',
+          'token': token,
+          'judulLomba': lombaSnap.get('judul'),
+        });
+
+        // 6. Jika kuota habis, pindahkan ke riwayatEvent (Selesai)
+        if (newKuota <= 0) {
+          Map<String, dynamic> lombaData = lombaSnap.data() as Map<String, dynamic>;
+          lombaData['idLombaAsli'] = lombaSnap.id;
+          lombaData['statusLomba'] = 'Penuh/Selesai';
+          
+          // Pindahkan ke riwayatEvent
+          transaction.set(_riwayatEventCollection.doc(lombaSnap.id), lombaData);
+          // Hapus dari lomba aktif
+          transaction.delete(lombaRef);
+        }
+
+        return {
+          'success': true,
+          'message': 'Pendaftaran berhasil!',
+          'token': token,
+          'data': {
+            'judul': lombaSnap.get('judul'),
+            'lokasi': lombaSnap.get('lokasi'),
+            'tanggal': lombaSnap.get('tanggal'),
+          }
+        };
       });
     } catch (e) {
       print("Error ikutiLomba: $e");
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan sistem: $e',
+      };
     }
   }
 

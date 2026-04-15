@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 class LombaModel {
-  final String? id;
+  String? id; // Dilepas final-nya agar bisa di-set dari doc.id Firestore
   final String judul;
   final String? gambarPath;
   final int kuota;
@@ -24,7 +24,7 @@ class LombaModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'id': id,
+      'id': id, // Tetap disertakan agar field 'id' ada di dalam dokumen Firestore
       'judul': judul,
       'gambarPath': gambarPath,
       'kuota': kuota,
@@ -37,14 +37,14 @@ class LombaModel {
 
   factory LombaModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return LombaModel(
-      id: docId ?? (map['id'] as String?),
-      judul: map['judul'] as String,
-      gambarPath: map['gambarPath'] as String?,
-      kuota: map['kuota'] as int,
-      jenis: map['jenis'] as String,
-      tanggal: map['tanggal'] as String,
-      lokasi: map['lokasi'] as String,
-      deskripsi: map['deskripsi'] as String,
+      id: docId ?? map['id'] as String?,
+      judul: map['judul'] ?? '',
+      gambarPath: map['gambarPath'],
+      kuota: map['kuota'] ?? 0,
+      jenis: map['jenis'] ?? '',
+      tanggal: map['tanggal'] ?? '',
+      lokasi: map['lokasi'] ?? '',
+      deskripsi: map['deskripsi'] ?? '',
     );
   }
 

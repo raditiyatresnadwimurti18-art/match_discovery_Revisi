@@ -30,12 +30,10 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
 
     if (!mounted) return;
 
-    if (role == 'admin' && isLogin == true) {
+    if (isLogin == true && (role == 'admin' || role == 'super')) {
       context.pushAndRemoveAll(const Home());
-    } else if (role == 'user' && isLogin == true) {
+    } else if (isLogin == true && role == 'user') {
       context.pushAndRemoveAll(const HomeUser());
-    } else if (role == 'guest') {
-      context.pushAndRemoveAll(const Login());
     } else {
       context.pushAndRemoveAll(const Login());
     }

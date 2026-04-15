@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:match_discovery/database/firebase_service.dart';
 import 'package:match_discovery/models/login_model.dart';
 
 class UserController {
@@ -40,7 +41,22 @@ class UserController {
 
   static Future<void> updateUserProfile(String id, String imagePath) async {
     try {
-      await _usersCollection.doc(id).update({'profilePath': imagePath});
+      // 1. Upload gambar ke Storage
+      String? downloadUrl = await StorageService.uploadImage(imagePath, 'profile_images');
+      
+      if (downloadUrl != null) {
+        // 2. Ambil data user lama (untuk hapus gambar lama)
+        DocumentSnapshot doc = await _usersCollection.doc(id).get();
+        if (doc.exists) {
+          String? oldUrl = (doc.data() as Map<String, dynamic>)['profilePath'];
+          if (oldUrl != null && oldUrl.startsWith('http')) {
+            await StorageService.deleteImage(oldUrl);
+          }
+        }
+        
+        // 3. Simpan URL baru ke Firestore
+        await _usersCollection.doc(id).update({'profilePath': downloadUrl});
+      }
     } catch (e) {
       print("Error updateUserProfile: $e");
     }

@@ -85,18 +85,24 @@ class _LoginState extends State<Login> {
               ElevatedButton(
                 style: kPrimaryButtonStyle(radius: 12),
                 onPressed: () async {
+                  // Show loading
+                  showDialog(
+                    context: dialogContext,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(child: CircularProgressIndicator()),
+                  );
+
                   var adminData = await AuthController.loginAdminModel(
                     username: userAdmin.text,
                     password: passAdmin.text,
                   );
 
-                  if (adminData != null) {
-                    await PreferenceHandler.setRole('admin');
-                    await PreferenceHandler.storingAdminId(adminData.id!);
-                    await PreferenceHandler.storingIsLogin(true);
+                  if (!dialogContext.mounted) return;
+                  Navigator.pop(dialogContext); // Close loading
 
+                  if (adminData != null) {
                     if (!dialogContext.mounted) return;
-                    Navigator.pop(dialogContext);
+                    Navigator.pop(dialogContext); // Close login dialog
 
                     if (!outerContext.mounted) return;
                     outerContext.pushAndRemoveAll(const Home());

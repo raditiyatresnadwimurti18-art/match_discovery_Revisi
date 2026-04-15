@@ -44,7 +44,14 @@ class _DaftarLombaState extends State<DaftarLomba> {
     final userId = await PreferenceHandler.getUserId();
     if (userId == null) return;
 
-    await RiwayatController.ikutiLomba(
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await RiwayatController.ikutiLomba(
       RiwayatModel(
         idUser: userId,
         idLomba: lombaId,
@@ -52,19 +59,85 @@ class _DaftarLombaState extends State<DaftarLomba> {
       ),
     );
 
-    // ✅ Tutup dialog pakai dialogContext (tidak perlu cek mounted)
-    if (dialogContext.mounted) {
-      Navigator.pop(dialogContext);
+    // Close loading indicator
+    if (mounted) Navigator.pop(context);
+
+    if (result['success'] == true) {
+      // ✅ Tutup dialog detail lomba
+      if (dialogContext.mounted) {
+        Navigator.pop(dialogContext);
+      }
+
+      // ✅ Tampilkan Token Sukses
+      if (mounted) {
+        _showTokenDialog(result['token'], result['data']);
+      }
+
+      // ✅ Refresh list
+      await _loadData();
+    } else {
+      // ✅ Tampilkan Pesan Gagal
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? "Gagal mendaftar"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+  }
 
-    // ✅ Refresh list — cek mounted setelah await
-    await _loadData();
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Berhasil mengikuti lomba!"),
-        backgroundColor: Colors.green,
+  void _showTokenDialog(String token, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 60),
+            SizedBox(height: 10),
+            Text("Pendaftaran Berhasil!", textAlign: TextAlign.center),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Simpan token pendaftaran Anda:"),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: kPrimaryColor),
+              ),
+              child: Text(
+                token,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  color: kPrimaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _infoRow(Icons.emoji_events, "Lomba", data['judul']),
+            _infoRow(Icons.location_on, "Lokasi", data['lokasi']),
+            _infoRow(Icons.calendar_today, "Tanggal", data['tanggal']),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: kPrimaryButtonStyle(),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Selesai"),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -145,13 +218,21 @@ class _DaftarLombaState extends State<DaftarLomba> {
                             lomba.gambarPath!.isNotEmpty)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              File(lomba.gambarPath!),
-                              width: double.infinity,
-                              height: 160,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _placeholderImage(),
-                            ),
+                            child: lomba.gambarPath!.startsWith('http')
+                                ? Image.network(
+                                    lomba.gambarPath!,
+                                    width: double.infinity,
+                                    height: 160,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => _placeholderImage(),
+                                  )
+                                : Image.file(
+                                    File(lomba.gambarPath!),
+                                    width: double.infinity,
+                                    height: 160,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => _placeholderImage(),
+                                  ),
                           )
                         else
                           _placeholderImage(),
@@ -345,18 +426,39 @@ class _DaftarLombaState extends State<DaftarLomba> {
                     ),
                     child:
                         lomba.gambarPath != null && lomba.gambarPath!.isNotEmpty
-                        ? Image.file(
-                            File(lomba.gambarPath!),
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: Colors.grey[200],
-                              child: const Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          )
+                        ? (lomba.gambarPath!.startsWith('http')
+                            ? Image.network(
+                                lomba.gambarPath!,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                ),
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(child: CircularProgressIndicator());
+                                },
+                              )
+                            : lomba.gambarPath!.startsWith('assets/')
+                                ? Image.asset(
+                                    lomba.gambarPath!,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                                    ),
+                                  )
+                                : Image.file(
+                                    File(lomba.gambarPath!),
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                                    ),
+                                  ))
                         : Container(
                             color: Colors.grey[200],
                             child: const Icon(Icons.image, color: Colors.grey),

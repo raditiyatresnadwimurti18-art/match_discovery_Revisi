@@ -13,13 +13,13 @@ dependencies:
   path_provider: ^2.1.5
   provider: ^6.1.5+1
   shared_preferences: ^2.5.4
-  sqflite: ^2.4.2
   flutter_launcher_icons: ^0.14.4
   animate_do: ^4.2.0
   lottie: ^3.3.2
   cloud_firestore: ^5.4.4 
   firebase_core: ^3.15.2
   firebase_auth: ^5.3.1
+  firebase_storage: ^12.4.10
 
 dev_dependencies:
   flutter_test:

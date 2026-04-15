@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:match_discovery/database/firebase_service.dart';
 import 'package:match_discovery/models/admin_model.dart';
 
 class AdminController {
@@ -50,9 +51,25 @@ class AdminController {
   static Future<void> updateAdminProfile(AdminModel admin) async {
     if (admin.id == null) return;
     try {
+      String? finalPath = admin.profilePath;
+
+      // 1. Upload jika path lokal
+      if (finalPath != null && !finalPath.startsWith('http') && finalPath.isNotEmpty) {
+        String? downloadUrl = await StorageService.uploadImage(finalPath, 'profile_images');
+        if (downloadUrl != null) {
+          // Hapus gambar lama
+          DocumentSnapshot oldDoc = await _usersCollection.doc(admin.id).get();
+          if (oldDoc.exists) {
+            String? oldUrl = (oldDoc.data() as Map<String, dynamic>)['profilePath'];
+            await StorageService.deleteImage(oldUrl);
+          }
+          finalPath = downloadUrl;
+        }
+      }
+
       await _usersCollection.doc(admin.id).update({
         'nama': admin.nama ?? 'Admin',
-        'profilePath': admin.profilePath,
+        'profilePath': finalPath,
         'role': admin.role,
       });
     } catch (e) {
@@ -81,6 +98,13 @@ class AdminController {
 
   static Future<void> deleteAdmin(String id) async {
     try {
+      // 1. Hapus gambar dari Storage
+      DocumentSnapshot doc = await _usersCollection.doc(id).get();
+      if (doc.exists) {
+        String? imageUrl = (doc.data() as Map<String, dynamic>)['profilePath'];
+        await StorageService.deleteImage(imageUrl);
+      }
+
       await _usersCollection.doc(id).delete();
     } catch (e) {
       print("Error deleteAdmin: $e");

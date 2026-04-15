@@ -355,9 +355,27 @@ class _ProfilUserState extends State<ProfilUser> {
                   ),
                   child: ClipOval(
                     child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-                        ? Image.file(File(_user!.profilePath!), fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.person, size: 60, color: kPrimaryColor))
+                        ? (_user!.profilePath!.startsWith('http')
+                            ? Image.network(
+                                _user!.profilePath!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(child: CircularProgressIndicator());
+                                },
+                              )
+                            : _user!.profilePath!.startsWith('assets/')
+                                ? Image.asset(
+                                    _user!.profilePath!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),
+                                  )
+                                : Image.file(
+                                    File(_user!.profilePath!),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),
+                                  ))
                         : const Icon(Icons.person, size: 60, color: kPrimaryColor),
                   ),
                 ),

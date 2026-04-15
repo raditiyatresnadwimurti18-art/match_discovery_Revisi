@@ -1,42 +1,45 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
 
-/// Pusat layanan Firebase untuk seluruh aplikasi.
-/// Memisahkan logika infrastruktur Firebase dari logika bisnis (Controller).
-class FirebaseService {
-  static final FirebaseFirestore _db = FirebaseFirestore.instance;
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
+class StorageService {
+  static final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // ── Collections ────────────────────────────────────────────────────────
-  static CollectionReference get users => _db.collection('users');
-  static CollectionReference get lomba => _db.collection('lomba');
-  static CollectionReference get riwayat => _db.collection('riwayat');
+  /// Upload gambar ke Firebase Storage dan kembalikan URL-nya.
+  /// [folder] adalah nama folder di Storage (misal: 'profile_images' atau 'lomba_images').
+  static Future<String?> uploadImage(String filePath, String folder) async {
+    try {
+      File file = File(filePath);
+      if (!file.existsSync()) return null;
 
-  // ── Auth ───────────────────────────────────────────────────────────────
-  static FirebaseAuth get auth => _auth;
-  static User? get currentUser => _auth.currentUser;
+      // Buat nama file unik berdasarkan timestamp
+      String fileName = "${DateTime.now().millisecondsSinceEpoch}${path.extension(filePath)}";
+      
+      // Referensi ke lokasi penyimpanan
+      Reference ref = _storage.ref().child(folder).child(fileName);
 
-  // ── Helper Methods ─────────────────────────────────────────────────────
-  
-  /// Mengambil satu dokumen berdasarkan ID
-  static Future<DocumentSnapshot> getDoc(CollectionReference collection, String id) {
-    return collection.doc(id).get();
+      // Mulai upload
+      UploadTask uploadTask = ref.putFile(file);
+      
+      // Tunggu selesai dan ambil URL
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      print("Error StorageService (uploadImage): $e");
+      return null;
+    }
   }
 
-  /// Menambah dokumen baru dan menyisipkan ID-nya ke dalam field 'id'
-  static Future<String> addDoc(CollectionReference collection, Map<String, dynamic> data) async {
-    DocumentReference doc = await collection.add(data);
-    await doc.update({'id': doc.id});
-    return doc.id;
-  }
-
-  /// Update dokumen
-  static Future<void> updateDoc(CollectionReference collection, String id, Map<String, dynamic> data) {
-    return collection.doc(id).update(data);
-  }
-
-  /// Hapus dokumen
-  static Future<void> deleteDoc(CollectionReference collection, String id) {
-    return collection.doc(id).delete();
+  /// Hapus gambar dari Storage berdasarkan URL.
+  static Future<void> deleteImage(String? imageUrl) async {
+    if (imageUrl == null || !imageUrl.startsWith('http')) return;
+    try {
+      Reference ref = _storage.refFromURL(imageUrl);
+      await ref.delete();
+    } catch (e) {
+      print("Error StorageService (deleteImage): $e");
+    }
   }
 }

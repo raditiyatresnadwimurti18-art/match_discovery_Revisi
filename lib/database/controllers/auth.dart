@@ -45,28 +45,31 @@ class AuthController {
   /// Login User/Admin menggunakan Firebase Auth.
   static Future<dynamic> login(String email, String password) async {
     try {
+      // ✅ Bersihkan sesi lama sebelum login baru
+      await PreferenceHandler.clearAll();
+
       UserCredential credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       String uid = credential.user!.uid;
-
       DocumentSnapshot doc = await _db.collection('users').doc(uid).get();
-      
+
       if (doc.exists) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         String role = data['role'] ?? 'user';
 
-        await PreferenceHandler.setRole(role);
+        // ✅ Simpan status login
         await PreferenceHandler.storingIsLogin(true);
+        await PreferenceHandler.setRole(role);
 
         if (role == 'admin' || role == 'super') {
           await PreferenceHandler.storingAdminId(uid);
-          return AdminModel.fromMap(data);
+          return AdminModel.fromMap(data, docId: uid);
         } else {
           await PreferenceHandler.storingUserId(uid);
-          return LoginModel.fromMap(data);
+          return LoginModel.fromMap(data, docId: uid);
         }
       }
       return null;
@@ -91,16 +94,61 @@ class AuthController {
     required String username,
     required String password,
   }) async {
-    final result = await login(username, password);
-    if (result is AdminModel) return result;
-    return null;
+    // ✅ Bersihkan sesi lama
+    await PreferenceHandler.clearAll();
+
+    // Check for hardcoded super admin credentials
+    if (username == '111' && password == '222') {
+      await PreferenceHandler.storingIsLogin(true);
+      await PreferenceHandler.setRole('super');
+      await PreferenceHandler.storingAdminId('super_admin_local');
+
+      return AdminModel(
+        id: 'super_admin_local',
+        username: '111',
+        password: '222',
+        nama: 'Super Admin',
+        role: 'super',
+        profilePath: '',
+      );
+    }
+
+    // Query Firestore for admin
+    try {
+      QuerySnapshot querySnapshot = await _db
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .where('password', isEqualTo: password)
+          .where('role', whereIn: ['admin', 'super'])
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot doc = querySnapshot.docs.first;
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        String role = data['role'] ?? 'admin';
+
+        await PreferenceHandler.storingIsLogin(true);
+        await PreferenceHandler.setRole(role);
+        await PreferenceHandler.storingAdminId(doc.id);
+
+        return AdminModel.fromMap(data, docId: doc.id);
+      }
+      return null;
+    } catch (e) {
+      print("Error loginAdminModel: $e");
+      return null;
+    }
   }
 
   static Future<bool> loginAdmin({
     required String username,
     required String password,
   }) async {
-    final result = await login(username, password);
-    return result != null && (result is AdminModel);
+    final result = await loginAdminModel(
+      username: username,
+      password: password,
+    );
+    return result != null;
   }
 }

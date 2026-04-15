@@ -127,12 +127,29 @@ class _Widget2State extends State<Widget2> {
                 _imagePath != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(_imagePath!),
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                        child: _imagePath!.startsWith('http')
+                            ? Image.network(
+                                _imagePath!,
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                              )
+                            : _imagePath!.startsWith('assets/')
+                                ? Image.asset(
+                                    _imagePath!,
+                                    height: 120,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                                  )
+                                : Image.file(
+                                    File(_imagePath!),
+                                    height: 120,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                                  ),
                       )
                     : Container(
                         height: 100,
@@ -319,7 +336,11 @@ class _Widget2State extends State<Widget2> {
               if (lomba.gambarPath != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: Image.file(File(lomba.gambarPath!), height: 200),
+                  child: lomba.gambarPath!.startsWith('http')
+                      ? Image.network(lomba.gambarPath!, height: 200)
+                      : lomba.gambarPath!.startsWith('assets/')
+                          ? Image.asset(lomba.gambarPath!, height: 200)
+                          : Image.file(File(lomba.gambarPath!), height: 200),
                 ),
               const SizedBox(height: 10),
               _detailRow(Icons.emoji_events_outlined, "Judul", lomba.judul),
@@ -418,12 +439,26 @@ class _Widget2State extends State<Widget2> {
                           child: lomba.gambarPath != null
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(lomba.gambarPath!),
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: lomba.gambarPath!.startsWith('http')
+                                      ? Image.network(
+                                          lomba.gambarPath!,
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : lomba.gambarPath!.startsWith('assets/')
+                                          ? Image.asset(
+                                              lomba.gambarPath!,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.file(
+                                              File(lomba.gambarPath!),
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                            ),
                                 )
                               : const Icon(Icons.image_not_supported),
                         ),

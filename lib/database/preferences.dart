@@ -20,6 +20,8 @@ class PreferenceHandler {
   static Future<void> storingIsLogin(bool isLogin) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_isLogin, isLogin);
+    // Debugging (bisa dihapus nanti)
+    print("PreferenceHandler: Status Login disimpan -> $isLogin");
   }
 
   static Future<bool?> getIsLogin() async {
@@ -88,6 +90,20 @@ class PreferenceHandler {
       return prefs.getString(_adminId);
     }
     return prefs.getString(_userId);
+  }
+
+  // ==================== SUPER ADMIN ====================
+
+  static const String _superAdminInitialized = 'super_admin_initialized';
+
+  static Future<void> setSuperAdminInitialized(bool initialized) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_superAdminInitialized, initialized);
+  }
+
+  static Future<bool> getSuperAdminInitialized() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_superAdminInitialized) ?? false;
   }
 
   // ==================== LOGOUT ====================
