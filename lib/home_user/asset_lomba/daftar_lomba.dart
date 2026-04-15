@@ -40,7 +40,7 @@ class _DaftarLombaState extends State<DaftarLomba> {
     });
   }
 
-  void _konfirmasiIkutiLomba(int lombaId, BuildContext dialogContext) async {
+  void _konfirmasiIkutiLomba(String lombaId, BuildContext dialogContext) async {
     final userId = await PreferenceHandler.getUserId();
     if (userId == null) return;
 

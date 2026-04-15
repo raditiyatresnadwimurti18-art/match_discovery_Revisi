@@ -12,9 +12,6 @@ class PreferenceHandler {
   static const String _role = 'role';
 
   // ✅ FIX: Pisahkan key ID untuk admin dan user
-  // Sebelumnya hanya ada 1 key '_id' yang dipakai bersama oleh admin & user.
-  // Akibatnya saat admin login (id=1 tersimpan), lalu user login tapi
-  // getId() masih mengembalikan id=1 milik Super Admin.
   static const String _userId = 'user_id'; // khusus user biasa
   static const String _adminId = 'admin_id'; // khusus admin
 
@@ -45,52 +42,52 @@ class PreferenceHandler {
   // ==================== USER ID ====================
 
   /// Simpan ID user biasa (dipanggil saat user login)
-  static Future<void> storingUserId(int id) async {
+  static Future<void> storingUserId(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_userId, id);
+    await prefs.setString(_userId, id);
   }
 
   /// Ambil ID user biasa
-  static Future<int?> getUserId() async {
+  static Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_userId);
+    return prefs.getString(_userId);
   }
 
   // ==================== ADMIN ID ====================
 
   /// Simpan ID admin (dipanggil saat admin login)
-  static Future<void> storingAdminId(int id) async {
+  static Future<void> storingAdminId(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_adminId, id);
+    await prefs.setString(_adminId, id);
   }
 
   /// Ambil ID admin
-  static Future<int?> getAdminId() async {
+  static Future<String?> getAdminId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_adminId);
+    return prefs.getString(_adminId);
   }
 
   // ==================== LEGACY (TETAP ADA agar tidak break kode lain) ====================
 
-  /// @deprecated Gunakan [storingUserId] atau [storingAdminId]
-  static Future<void> storingId(int id) async {
+  /// @deprecated Gunakan [storingUserId] or [storingAdminId]
+  static Future<void> storingId(String id) async {
     final prefs = await SharedPreferences.getInstance();
     final role = prefs.getString(_role);
-    if (role == 'admin') {
-      await prefs.setInt(_adminId, id);
+    if (role == 'admin' || role == 'super') {
+      await prefs.setString(_adminId, id);
     } else {
-      await prefs.setInt(_userId, id);
+      await prefs.setString(_userId, id);
     }
   }
 
-  /// @deprecated Gunakan [getUserId] atau [getAdminId]
-  static Future<int?> getId() async {
+  /// @deprecated Gunakan [getUserId] or [getAdminId]
+  static Future<String?> getId() async {
     final prefs = await SharedPreferences.getInstance();
     final role = prefs.getString(_role);
-    if (role == 'admin') {
-      return prefs.getInt(_adminId);
+    if (role == 'admin' || role == 'super') {
+      return prefs.getString(_adminId);
     }
-    return prefs.getInt(_userId);
+    return prefs.getString(_userId);
   }
 
   // ==================== LOGOUT ====================

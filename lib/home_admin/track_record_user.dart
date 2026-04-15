@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/sql_lite.dart';
 import 'package:match_discovery/util/app_theme.dart';
 import 'package:collection/collection.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TrackRecordUser extends StatefulWidget {
   const TrackRecordUser({super.key});
@@ -28,36 +28,51 @@ class _TrackRecordUserState extends State<TrackRecordUser> {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final dbs = await DBHelper.db();
+    try {
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-    // ✅ Query semua riwayatSelesai JOIN user untuk dapat nama
-    final result = await dbs.rawQuery('''
-      SELECT
-        user.nama        AS nama_user,
-        user.tlpon       AS telepon_user,
-        rs.judulLomba,
-        rs.tanggalSelesai,
-        rs.idUser
-      FROM riwayatSelesai rs
-      INNER JOIN user ON rs.idUser = user.id
-      ORDER BY user.nama ASC, rs.tanggalSelesai DESC
-    ''');
+      // Firestore doesn't support Joins, so we fetch riwayatSelesai then join with users
+      final riwayatSelesaiSnap = await firestore.collection('riwayatSelesai')
+          .orderBy('tanggalSelesai', descending: true)
+          .get();
 
-    // Group by nama user
-    final grouped = groupBy(
-      result,
-      (Map obj) => (obj['nama_user'] as String?) ?? 'Tidak Diketahui',
-    );
+      List<Map<String, dynamic>> result = [];
+      
+      for (var doc in riwayatSelesaiSnap.docs) {
+        Map<String, dynamic> rsData = doc.data();
+        String userId = rsData['idUser'];
 
-    final expanded = {for (var key in grouped.keys) key: false};
+        DocumentSnapshot userSnap = await firestore.collection('users').doc(userId).get();
+        if (userSnap.exists) {
+          result.add({
+            'nama_user': userSnap.get('nama'),
+            'telepon_user': userSnap.get('tlpon'),
+            'judulLomba': rsData['judulLomba'],
+            'tanggalSelesai': rsData['tanggalSelesai'],
+            'idUser': userId,
+          });
+        }
+      }
 
-    if (!mounted) return;
-    setState(() {
-      _groupedData = grouped;
-      _expandedMap = expanded;
-      _totalSelesai = result.length;
-      _isLoading = false;
-    });
+      // Group by nama user
+      final grouped = groupBy(
+        result,
+        (Map obj) => (obj['nama_user'] as String?) ?? 'Tidak Diketahui',
+      );
+
+      final expanded = {for (var key in grouped.keys) key: false};
+
+      if (!mounted) return;
+      setState(() {
+        _groupedData = grouped;
+        _expandedMap = expanded;
+        _totalSelesai = result.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error _loadData: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

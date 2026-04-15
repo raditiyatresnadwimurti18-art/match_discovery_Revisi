@@ -32,53 +32,41 @@ class _ReggisterState extends State<Reggister> {
     super.dispose();
   }
 
-  void _showEmailTerdaftarDialog() {
+  void _showErrorDialog(String title, String message) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.red),
-            SizedBox(width: 8),
+            const Icon(Icons.error_outline, color: Colors.red),
+            const SizedBox(width: 8),
             Flexible(
               child: Text(
-                "Email Sudah Terdaftar",
-                style: TextStyle(
+                title,
+                style: const TextStyle(
                     fontWeight: FontWeight.bold, color: Colors.red),
               ),
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '"${emailController.text}" sudah digunakan oleh akun lain.',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Gunakan email lain atau masuk dengan akun yang sudah ada.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-          ],
-        ),
+        content: Text(message, style: const TextStyle(fontSize: 14)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Coba Email Lain",
+            child: const Text("Tutup",
                 style: TextStyle(color: Colors.grey)),
           ),
-          ElevatedButton(
-            style: kPrimaryButtonStyle(radius: 12),
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.pushAndRemoveAll(const Login1());
-            },
-            child: const Text("Masuk"),
-          ),
+          if (title == "Email Sudah Terdaftar")
+            ElevatedButton(
+              style: kPrimaryButtonStyle(radius: 12),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                context.pushAndRemoveAll(const Login1());
+              },
+              child: const Text("Masuk"),
+            ),
         ],
       ),
     );
@@ -156,11 +144,7 @@ class _ReggisterState extends State<Reggister> {
                         controller: passwordController,
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Isi dulu bos!';
-                          if (v.length < 8) return 'Kurang panjang (min 8)';
-                          if (!v.contains(RegExp(r'[A-Z]')))
-                            return 'Butuh huruf kapital';
-                          if (!v.contains(RegExp(r'[0-9]')))
-                            return 'Butuh angka';
+                          if (v.length < 6) return 'Minimal 6 karakter (syarat Firebase)';
                           return null;
                         },
                         decoration: decorationConstant(
@@ -229,7 +213,7 @@ class _ReggisterState extends State<Reggister> {
                             if (!_formKey.currentState!.validate()) return;
                             setState(() => _isLoading = true);
 
-                            final berhasil =
+                            final result =
                                 await AuthController.registerUser(
                               LoginModel(
                                 nama: namaController.text,
@@ -242,20 +226,32 @@ class _ReggisterState extends State<Reggister> {
                             if (!mounted) return;
                             setState(() => _isLoading = false);
 
-                            if (!berhasil) {
-                              _showEmailTerdaftarDialog();
-                              return;
+                            if (result == 'success') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Akun berhasil dibuat!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              await Future.delayed(const Duration(seconds: 1));
+                              if (!mounted) return;
+                              context.push(Login1());
+                            } else if (result == 'email-already-in-use') {
+                              _showErrorDialog("Email Sudah Terdaftar", 
+                                "Email ini sudah digunakan oleh akun lain. Silakan gunakan email lain.");
+                            } else if (result == 'weak-password') {
+                              _showErrorDialog("Password Lemah", 
+                                "Password terlalu lemah menurut sistem Firebase. Gunakan kombinasi yang lebih kuat.");
+                            } else if (result == 'invalid-email') {
+                              _showErrorDialog("Email Tidak Valid", 
+                                "Format email yang Anda masukkan tidak dikenali oleh Firebase.");
+                            } else if (result == 'network-request-failed') {
+                              _showErrorDialog("Masalah Koneksi", 
+                                "Gagal terhubung ke Firebase. Periksa koneksi internet Anda.");
+                            } else {
+                              _showErrorDialog("Registrasi Gagal", 
+                                "Terjadi kesalahan: $result. Pastikan Firebase Anda sudah aktif.");
                             }
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Akun berhasil dibuat!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                            await Future.delayed(const Duration(seconds: 1));
-                            if (!mounted) return;
-                            context.push(Login1());
                           },
                     style: kPrimaryButtonStyle(),
                     child: _isLoading

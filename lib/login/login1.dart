@@ -146,20 +146,16 @@ class _Login1State extends State<Login1> {
                             if (!_formKey.currentState!.validate()) return;
                             setState(() => _isLoading = true);
 
-                            final LoginModel? login =
-                                await AuthController.loginUser(
-                              email: emailController.text,
-                              password: passwordController.text,
+                            final login =
+                                await AuthController.login(
+                              emailController.text,
+                              passwordController.text,
                             );
 
                             if (!mounted) return;
                             setState(() => _isLoading = false);
 
                             if (login != null) {
-                              await PreferenceHandler.setRole('user');
-                              await PreferenceHandler.storingUserId(login.id!);
-                              await PreferenceHandler.storingIsLogin(true);
-
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -169,7 +165,7 @@ class _Login1State extends State<Login1> {
                               );
                               await Future.delayed(const Duration(seconds: 1));
                               if (!mounted) return;
-                              context.pushAndRemoveAll(HomeUser());
+                              context.pushAndRemoveAll(const HomeUser());
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

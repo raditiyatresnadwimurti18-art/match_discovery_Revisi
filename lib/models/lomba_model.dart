@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 class LombaModel {
-  final int? id;
+  final String? id;
   final String judul;
   final String? gambarPath;
   final int kuota;
@@ -35,11 +35,11 @@ class LombaModel {
     };
   }
 
-  factory LombaModel.fromMap(Map<String, dynamic> map) {
+  factory LombaModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return LombaModel(
-      id: map['id'] != null ? map['id'] as int : null,
+      id: docId ?? (map['id'] as String?),
       judul: map['judul'] as String,
-      gambarPath: map['gambarPath'] as String,
+      gambarPath: map['gambarPath'] as String?,
       kuota: map['kuota'] as int,
       jenis: map['jenis'] as String,
       tanggal: map['tanggal'] as String,

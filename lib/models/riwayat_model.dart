@@ -2,9 +2,9 @@
 import 'dart:convert';
 
 class RiwayatModel {
-  int? id;
-  int idUser;
-  int idLomba;
+  String? id;
+  String idUser;
+  String idLomba;
   String? tanggalDaftar;
 
   RiwayatModel({
@@ -25,11 +25,11 @@ class RiwayatModel {
   }
 
   // Untuk mengambil dari Database
-  factory RiwayatModel.fromMap(Map<String, dynamic> map) {
+  factory RiwayatModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return RiwayatModel(
-      id: map['id'] != null ? map['id'] as int : null,
-      idUser: map['idUser'] as int,
-      idLomba: map['idLomba'] as int,
+      id: docId ?? (map['id'] as String?),
+      idUser: map['idUser'] as String,
+      idLomba: map['idLomba'] as String,
       tanggalDaftar: map['tanggalDaftar'] != null
           ? map['tanggalDaftar'] as String
           : null,

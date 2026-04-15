@@ -14,7 +14,7 @@ class HistoryUser extends StatefulWidget {
 class _HistoryUserState extends State<HistoryUser> {
   List<Map<String, dynamic>> _historyList = [];
   bool _isLoading = true;
-  int? _userId;
+  String? _userId;
 
   @override
   void initState() {
@@ -42,7 +42,7 @@ class _HistoryUserState extends State<HistoryUser> {
     });
   }
 
-  void _showConfirmationDialog(int lombaId, String judulLomba) {
+  void _showConfirmationDialog(String lombaId, String judulLomba) {
     final outerContext = context;
     showDialog(
       context: outerContext,
@@ -165,7 +165,7 @@ class _HistoryUserState extends State<HistoryUser> {
     final judul = (item['judul'] as String?) ?? 'Tanpa Judul';
     final lokasi = (item['lokasi'] as String?) ?? '-';
     final tanggal = (item['tanggal'] as String?) ?? '-';
-    final lombaId = item['idLomba'] as int;
+    final lombaId = item['idLomba'] as String;
     final gambar = item['gambarPath'] as String?;
 
     return Container(

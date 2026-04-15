@@ -68,13 +68,13 @@ class _Widget2State extends State<Widget2> {
     if (image != null) setState(() => _imagePath = image.path);
   }
 
-  void _showForm(int? id) {
+  void _showForm(String? id) {
     if (id != null) {
       final e = _allLomba.firstWhere((e) => e.id == id);
       _judulCtrl.text = e.judul ?? '';
       _lokasiCtrl.text = e.lokasi ?? '';
       _deskripsiCtrl.text = e.deskripsi ?? '';
-      _kuotaCtrl.text = e.kuota?.toString() ?? '0';
+      _kuotaCtrl.text = e.kuota.toString();
       _jenisCtrl.text = e.jenis ?? '';
       _tanggalCtrl.text = e.tanggal ?? '';
       _imagePath = e.gambarPath;
@@ -278,7 +278,7 @@ class _Widget2State extends State<Widget2> {
     );
   }
 
-  void _deleteLomba(int id) async {
+  void _deleteLomba(String id) async {
     await LombaController.deleteLomba(id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

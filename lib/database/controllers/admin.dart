@@ -1,83 +1,89 @@
-import 'package:match_discovery/database/sql_lite.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:match_discovery/models/admin_model.dart';
-import 'package:sqflite/sqflite.dart';
 
 class AdminController {
+  static final CollectionReference _usersCollection =
+      FirebaseFirestore.instance.collection('users');
+
   // ==================== CREATE ====================
 
-  static Future<int> addAdmin(AdminModel newAdmin) async {
-    final dbs = await DBHelper.db();
+  static Future<String?> addAdmin(AdminModel newAdmin) async {
     try {
-      return await dbs.insert(
-        'admin',
-        newAdmin.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      DocumentReference docRef = await _usersCollection.add(newAdmin.toMap());
+      return docRef.id;
     } catch (e) {
       print("Error saat menambah admin: $e");
-      return -1;
+      return null;
     }
   }
 
   // ==================== READ ====================
 
-static Future<AdminModel?> getAdminById(int id) async {
-  try {
-    final db = await DBHelper.db();
-    final result = await db.query(
-      'admin',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-
-    if (result.isEmpty) return null;
-    return AdminModel.fromMap(result.first);
-  } catch (e) {
-    return null; 
+  static Future<AdminModel?> getAdminById(String id) async {
+    try {
+      DocumentSnapshot doc = await _usersCollection.doc(id).get();
+      if (!doc.exists) return null;
+      return AdminModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id);
+    } catch (e) {
+      print("Error getAdminById: $e");
+      return null;
+    }
   }
-}
 
   static Future<List<AdminModel>> getSemuaAdmin() async {
-    final dbs = await DBHelper.db();
-    final maps = await dbs.query('admin', orderBy: 'id DESC');
-    return List.generate(maps.length, (i) => AdminModel.fromMap(maps[i]));
+    try {
+      QuerySnapshot querySnapshot = await _usersCollection
+          .where('role', whereIn: ['admin', 'super'])
+          .get();
+      
+      return querySnapshot.docs
+          .map((doc) => AdminModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id))
+          .toList();
+    } catch (e) {
+      print("Error getSemuaAdmin: $e");
+      return [];
+    }
   }
 
   // ==================== UPDATE ====================
 
-  static Future<int> updateAdminProfile(AdminModel admin) async {
-    final dbs = await DBHelper.db();
-    return await dbs.update(
-      'admin',
-      {
+  static Future<void> updateAdminProfile(AdminModel admin) async {
+    if (admin.id == null) return;
+    try {
+      await _usersCollection.doc(admin.id).update({
         'nama': admin.nama ?? 'Admin',
         'profilePath': admin.profilePath,
         'role': admin.role,
-      },
-      where: 'id = ?',
-      whereArgs: [admin.id],
-    );
+      });
+    } catch (e) {
+      print("Error updateAdminProfile: $e");
+    }
   }
 
-  static Future<int> updateAdminDetail(
-    int id,
+  static Future<void> updateAdminDetail(
+    String id,
     String nama,
     String username,
     String password,
   ) async {
-    final dbs = await DBHelper.db();
-    return await dbs.update(
-      'admin',
-      {'nama': nama, 'username': username, 'password': password},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      await _usersCollection.doc(id).update({
+        'nama': nama,
+        'username': username,
+        'password': password,
+      });
+    } catch (e) {
+      print("Error updateAdminDetail: $e");
+    }
   }
 
   // ==================== DELETE ====================
 
-  static Future<int> deleteAdmin(int id) async {
-    final dbs = await DBHelper.db();
-    return await dbs.delete('admin', where: 'id = ?', whereArgs: [id]);
+  static Future<void> deleteAdmin(String id) async {
+    try {
+      await _usersCollection.doc(id).delete();
+    } catch (e) {
+      print("Error deleteAdmin: $e");
+    }
   }
 }

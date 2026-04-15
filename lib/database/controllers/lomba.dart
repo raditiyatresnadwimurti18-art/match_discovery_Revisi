@@ -1,45 +1,52 @@
-import 'package:match_discovery/database/sql_lite.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:match_discovery/models/lomba_model.dart';
-import 'package:sqflite/sqflite.dart';
 
 class LombaController {
+  static final CollectionReference _lombaCollection =
+      FirebaseFirestore.instance.collection('lomba');
+
   // ==================== CREATE ====================
 
   static Future<void> insertLomba(LombaModel data) async {
-    final dbs = await DBHelper.db();
-    await dbs.insert(
-      'lomba',
-      data.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    try {
+      await _lombaCollection.add(data.toMap());
+    } catch (e) {
+      print("Error insertLomba: $e");
+    }
   }
 
   // ==================== READ ====================
 
   static Future<List<LombaModel>> getAllLomba() async {
-    final dbs = await DBHelper.db();
-    final result = await dbs.query('lomba', orderBy: 'id DESC');
-    return result.map((e) => LombaModel.fromMap(e)).toList();
+    try {
+      QuerySnapshot querySnapshot = await _lombaCollection.get();
+      return querySnapshot.docs
+          .map((doc) => LombaModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id))
+          .toList();
+    } catch (e) {
+      print("Error getAllLomba: $e");
+      return [];
+    }
   }
 
   // ==================== UPDATE ====================
 
-  static Future<int> updateLomba(LombaModel data) async {
-    final dbs = await DBHelper.db();
-    if (data.id == null)
-      throw Exception("Gagal Update: ID Lomba tidak ditemukan");
-    return await dbs.update(
-      'lomba',
-      data.toMap(),
-      where: 'id = ?',
-      whereArgs: [data.id],
-    );
+  static Future<void> updateLomba(LombaModel data) async {
+    if (data.id == null) throw Exception("Gagal Update: ID Lomba tidak ditemukan");
+    try {
+      await _lombaCollection.doc(data.id).update(data.toMap());
+    } catch (e) {
+      print("Error updateLomba: $e");
+    }
   }
 
   // ==================== DELETE ====================
 
-  static Future<int> deleteLomba(int id) async {
-    final dbs = await DBHelper.db();
-    return await dbs.delete('lomba', where: 'id = ?', whereArgs: [id]);
+  static Future<void> deleteLomba(String id) async {
+    try {
+      await _lombaCollection.doc(id).delete();
+    } catch (e) {
+      print("Error deleteLomba: $e");
+    }
   }
 }

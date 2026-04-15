@@ -1,39 +1,53 @@
-import 'package:match_discovery/database/sql_lite.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:match_discovery/models/login_model.dart';
 
 class UserController {
+  static final CollectionReference _usersCollection =
+      FirebaseFirestore.instance.collection('users');
+
   // ==================== READ ====================
 
-  static Future<LoginModel?> getUserById(int id) async {
-    final dbs = await DBHelper.db();
-    final result = await dbs.query('user', where: 'id = ?', whereArgs: [id]);
-    if (result.isNotEmpty) return LoginModel.fromMap(result.first);
-    print("User dengan ID $id tidak ditemukan di DB");
-    return null;
+  static Future<LoginModel?> getUserById(String id) async {
+    try {
+      DocumentSnapshot doc = await _usersCollection.doc(id).get();
+      if (doc.exists) {
+        return LoginModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id);
+      }
+      print("User dengan ID $id tidak ditemukan di Firestore");
+      return null;
+    } catch (e) {
+      print("Error getUserById: $e");
+      return null;
+    }
   }
 
   static Future<List<LoginModel>> getAllUser() async {
-    final dbs = await DBHelper.db();
-    final result = await dbs.query('user');
-    final users = result.map((e) => LoginModel.fromMap(e)).toList();
-    print(users);
-    return users;
+    try {
+      QuerySnapshot querySnapshot = await _usersCollection
+          .where('role', isEqualTo: 'user')
+          .get();
+      
+      return querySnapshot.docs
+          .map((doc) => LoginModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id))
+          .toList();
+    } catch (e) {
+      print("Error getAllUser: $e");
+      return [];
+    }
   }
 
   // ==================== UPDATE ====================
 
-  static Future<int> updateUserProfile(int id, String imagePath) async {
-    final dbs = await DBHelper.db();
-    return await dbs.update(
-      'user',
-      {'profilePath': imagePath},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  static Future<void> updateUserProfile(String id, String imagePath) async {
+    try {
+      await _usersCollection.doc(id).update({'profilePath': imagePath});
+    } catch (e) {
+      print("Error updateUserProfile: $e");
+    }
   }
 
-  static Future<int> updateUserDetail({
-    required int id,
+  static Future<void> updateUserDetail({
+    required String id,
     required String nama,
     required String email,
     required String tlpon,
@@ -41,37 +55,36 @@ class UserController {
     required String pendidikanTerakhir,
     required String asalSekolah,
   }) async {
-    final dbs = await DBHelper.db();
-    return await dbs.update(
-      'user',
-      {
+    try {
+      await _usersCollection.doc(id).update({
         'nama': nama,
         'email': email,
         'tlpon': tlpon,
         'asalKota': asalKota,
         'pendidikanTerakhir': pendidikanTerakhir,
         'asalSekolah': asalSekolah,
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+      });
+    } catch (e) {
+      print("Error updateUserDetail: $e");
+    }
   }
 
-  static Future<int> updateUser(LoginModel user) async {
-    final dbs = await DBHelper.db();
+  static Future<void> updateUser(LoginModel user) async {
     if (user.id == null) throw Exception("ID wajib ada");
-    return await dbs.update(
-      'user',
-      user.toMap(),
-      where: 'id = ?',
-      whereArgs: [user.id],
-    );
+    try {
+      await _usersCollection.doc(user.id!).update(user.toMap());
+    } catch (e) {
+      print("Error updateUser: $e");
+    }
   }
 
   // ==================== DELETE ====================
 
-  static Future<int> deleteUser(int id) async {
-    final dbs = await DBHelper.db();
-    return await dbs.delete('user', where: 'id = ?', whereArgs: [id]);
+  static Future<void> deleteUser(String id) async {
+    try {
+      await _usersCollection.doc(id).delete();
+    } catch (e) {
+      print("Error deleteUser: $e");
+    }
   }
 }

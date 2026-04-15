@@ -1,10 +1,10 @@
 class AdminModel {
-  int? id;
+  String? id;
   String username;
   String password;
   String? nama;
   String? profilePath;
-  String role; // 'super' atau 'biasa'
+  String role; // 'super' atau 'admin'
 
   AdminModel({
     this.id,
@@ -12,18 +12,18 @@ class AdminModel {
     required this.password,
     this.nama,
     this.profilePath,
-    this.role = 'biasa', // Defaultnya admin biasa
+    this.role = 'admin', // Defaultnya admin
   });
 
   // Mengubah Map dari database ke Objek AdminModel
-  factory AdminModel.fromMap(Map<String, dynamic> map) {
+  factory AdminModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return AdminModel(
-      id: map['id'],
+      id: docId ?? map['id'],
       username: map['username'],
       password: map['password'],
       nama: map['nama'],
       profilePath: map['profilePath'],
-      role: map['role'] ?? 'biasa',
+      role: map['role'] ?? 'admin',
     );
   }
 

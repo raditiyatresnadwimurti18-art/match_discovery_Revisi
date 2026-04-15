@@ -1,6 +1,6 @@
 class RiwayatSelesaiModel {
-  final int? id;
-  final int idUser;
+  final String? id;
+  final String idUser;
   final String judulLomba;
   final String tanggalSelesai;
 
@@ -12,10 +12,10 @@ class RiwayatSelesaiModel {
   });
 
   // Konversi dari Map (dari database) ke Model
-  factory RiwayatSelesaiModel.fromMap(Map<String, dynamic> map) {
+  factory RiwayatSelesaiModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return RiwayatSelesaiModel(
-      id: map['id'] as int?,
-      idUser: map['idUser'] as int,
+      id: docId ?? (map['id'] as String?),
+      idUser: map['idUser'] as String,
       judulLomba: map['judulLomba'] as String,
       tanggalSelesai: map['tanggalSelesai'] as String,
     );
@@ -24,7 +24,7 @@ class RiwayatSelesaiModel {
   // Konversi dari Model ke Map (untuk insert ke database)
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id,
+      'id': id,
       'idUser': idUser,
       'judulLomba': judulLomba,
       'tanggalSelesai': tanggalSelesai,

@@ -28,7 +28,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
   }
 
  Future<void> _fetchAdminData() async {
-  int? id = await PreferenceHandler.getId();
+  String? id = await PreferenceHandler.getId();
   if (id == null) return;
 
   try {
@@ -120,7 +120,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                   nama: nameCtrl.text,
                   username: userCtrl.text,
                   password: passCtrl.text,
-                  role: 'biasa',
+                  role: 'admin',
                   profilePath: '',
                 ));
                 if (!context.mounted) return;

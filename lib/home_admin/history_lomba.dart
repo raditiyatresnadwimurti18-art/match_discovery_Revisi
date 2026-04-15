@@ -34,7 +34,7 @@ class _HistoryLombaState extends State<HistoryLomba> {
     });
   }
 
-  void _showDeleteDialog(int id) {
+  void _showDeleteDialog(String id) {
     final outerContext = context;
     showDialog(
       context: outerContext,
