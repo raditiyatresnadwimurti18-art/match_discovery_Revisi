@@ -95,15 +95,21 @@ class _HomeState extends State<Home> {
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: ClipOval(
-                  child:
-                      _admin?.profilePath != null &&
+                  child: _admin?.profilePath != null &&
                           _admin!.profilePath!.isNotEmpty
-                      ? Image.file(
-                          File(_admin!.profilePath!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.person, color: Colors.white),
-                        )
+                      ? (_admin!.profilePath!.startsWith('http')
+                          ? Image.network(
+                              _admin!.profilePath!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.person, color: Colors.white),
+                            )
+                          : Image.file(
+                              File(_admin!.profilePath!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.person, color: Colors.white),
+                            ))
                       : const Icon(Icons.person, color: Colors.white),
                 ),
               ),
@@ -133,18 +139,27 @@ class _HomeState extends State<Home> {
                 style: const TextStyle(fontSize: 12),
               ),
               currentAccountPicture: ClipOval(
-                child:
-                    _admin?.profilePath != null &&
+                child: _admin?.profilePath != null &&
                         _admin!.profilePath!.isNotEmpty
-                    ? Image.file(
-                        File(_admin!.profilePath!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                      )
+                    ? (_admin!.profilePath!.startsWith('http')
+                        ? Image.network(
+                            _admin!.profilePath!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Image.file(
+                            File(_admin!.profilePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.white,
+                            ),
+                          ))
                     : const Icon(Icons.person, size: 50, color: Colors.white),
               ),
             ),

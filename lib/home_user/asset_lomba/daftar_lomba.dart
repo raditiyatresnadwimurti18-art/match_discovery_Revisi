@@ -15,7 +15,6 @@ class DaftarLomba extends StatefulWidget {
 }
 
 class _DaftarLombaState extends State<DaftarLomba> {
-  // ✅ Gunakan List langsung (bukan Future) agar refresh lebih terkontrol
   List<LombaModel> _lombaList = [];
   bool _isLoading = true;
 
@@ -25,64 +24,73 @@ class _DaftarLombaState extends State<DaftarLomba> {
     _loadData();
   }
 
-  // ✅ Load data langsung ke list, bukan ke Future
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final data = await LombaController.getAllLomba();
-
-    // ✅ Pastikan mounted dicek SETELAH await selesai
-    if (!mounted) return;
-    setState(() {
-      _lombaList = data;
-      _isLoading = false;
-    });
+    try {
+      final data = await LombaController.getAllLomba();
+      if (!mounted) return;
+      setState(() {
+        _lombaList = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _konfirmasiIkutiLomba(String lombaId, BuildContext dialogContext) async {
-    final userId = await PreferenceHandler.getUserId();
-    if (userId == null) return;
+    final userId = PreferenceHandler.getUserId();
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sesi berakhir, silakan login kembali")),
+      );
+      return;
+    }
 
-    // Show loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    final result = await RiwayatController.ikutiLomba(
-      RiwayatModel(
-        idUser: userId,
-        idLomba: lombaId,
-        tanggalDaftar: DateTime.now().toIso8601String().split('T').first,
-      ),
-    );
+    try {
+      final result = await RiwayatController.ikutiLomba(
+        RiwayatModel(
+          idUser: userId,
+          idLomba: lombaId,
+          tanggalDaftar: DateTime.now().toIso8601String().split('T').first,
+        ),
+      );
 
-    // Close loading indicator
-    if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context); // Tutup loading
 
-    if (result['success'] == true) {
-      // ✅ Tutup dialog detail lomba
-      if (dialogContext.mounted) {
-        Navigator.pop(dialogContext);
+      if (result['success'] == true) {
+        if (dialogContext.mounted) Navigator.pop(dialogContext); // Tutup detail
+
+        if (mounted) {
+          _showTokenDialog(
+            result['token']?.toString() ?? "-",
+            result['data'] as Map<String, dynamic>? ?? {},
+          );
+        }
+        await _loadData();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']?.toString() ?? "Gagal mendaftar"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-
-      // ✅ Tampilkan Token Sukses
-      if (mounted) {
-        _showTokenDialog(result['token'], result['data']);
-      }
-
-      // ✅ Refresh list
-      await _loadData();
-    } else {
-      // ✅ Tampilkan Pesan Gagal
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Tutup loading jika error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? "Gagal mendaftar"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text("Terjadi kesalahan: $e"), backgroundColor: Colors.red),
         );
       }
     }
@@ -123,9 +131,9 @@ class _DaftarLombaState extends State<DaftarLomba> {
               ),
             ),
             const SizedBox(height: 20),
-            _infoRow(Icons.emoji_events, "Lomba", data['judul']),
-            _infoRow(Icons.location_on, "Lokasi", data['lokasi']),
-            _infoRow(Icons.calendar_today, "Tanggal", data['tanggal']),
+            _infoRow(Icons.emoji_events, "Lomba", data['judul']?.toString()),
+            _infoRow(Icons.location_on, "Lokasi", data['lokasi']?.toString()),
+            _infoRow(Icons.calendar_today, "Tanggal", data['tanggal']?.toString()),
           ],
         ),
         actions: [
@@ -143,19 +151,15 @@ class _DaftarLombaState extends State<DaftarLomba> {
   }
 
   void _showLombaDetail(BuildContext context, LombaModel lomba) async {
-    final userId = await PreferenceHandler.getUserId();
+    final userId = PreferenceHandler.getUserId();
     if (userId == null) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Silahkan login terlebih dahulu")),
       );
       return;
     }
 
-    final sedangIkut = await RiwayatController.isUserSedangIkutLomba(
-      userId,
-      lomba.id!,
-    );
+    final sedangIkut = await RiwayatController.isUserSedangIkutLomba(userId, lomba.id!);
     if (!mounted) return;
 
     final screenSize = MediaQuery.of(context).size;
@@ -164,20 +168,14 @@ class _DaftarLombaState extends State<DaftarLomba> {
       context: context,
       builder: (dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 40,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: SizedBox(
             width: screenSize.width * 0.9,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ──────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Row(
@@ -186,7 +184,7 @@ class _DaftarLombaState extends State<DaftarLomba> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          lomba.judul ?? "Detail Lomba",
+                          lomba.judul,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -199,23 +197,17 @@ class _DaftarLombaState extends State<DaftarLomba> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 12),
                 const Divider(height: 1),
-
-                // ── Scrollable Content ───────────────────────────
                 ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: screenSize.height * 0.55,
-                  ),
+                  constraints: BoxConstraints(maxHeight: screenSize.height * 0.55),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (lomba.gambarPath != null &&
-                            lomba.gambarPath!.isNotEmpty)
+                        if (lomba.gambarPath != null && lomba.gambarPath!.isNotEmpty)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: lomba.gambarPath!.startsWith('http')
@@ -238,28 +230,13 @@ class _DaftarLombaState extends State<DaftarLomba> {
                           _placeholderImage(),
                         const SizedBox(height: 14),
                         _infoRow(Icons.category_outlined, "Jenis", lomba.jenis),
-                        _infoRow(
-                          Icons.calendar_today_outlined,
-                          "Tanggal",
-                          lomba.tanggal,
-                        ),
-                        _infoRow(
-                          Icons.location_on_outlined,
-                          "Lokasi",
-                          lomba.lokasi,
-                        ),
-                        _infoRow(
-                          Icons.people_outline,
-                          "Kuota",
-                          "${lomba.kuota ?? 0}",
-                        ),
+                        _infoRow(Icons.calendar_today_outlined, "Tanggal", lomba.tanggal),
+                        _infoRow(Icons.location_on_outlined, "Lokasi", lomba.lokasi),
+                        _infoRow(Icons.people_outline, "Kuota", "${lomba.kuota ?? 0}"),
                         const Divider(height: 24),
                         const Text(
                           "Deskripsi:",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: kPrimaryColor,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: kPrimaryColor),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -270,41 +247,23 @@ class _DaftarLombaState extends State<DaftarLomba> {
                     ),
                   ),
                 ),
-
                 const Divider(height: 1),
-
-                // ── Actions ──────────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text(
-                          "Tutup",
-                          style: TextStyle(color: Colors.grey),
-                        ),
+                        child: const Text("Tutup", style: TextStyle(color: Colors.grey)),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: sedangIkut
-                            ? null
-                            : () => _konfirmasiIkutiLomba(
-                                lomba.id!,
-                                dialogContext,
-                              ),
+                        onPressed: sedangIkut ? null : () => _konfirmasiIkutiLomba(lomba.id!, dialogContext),
                         style: sedangIkut
-                            ? ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey,
-                              )
+                            ? ElevatedButton.styleFrom(backgroundColor: Colors.grey)
                             : kPrimaryButtonStyle(radius: 12),
-                        child: Text(
-                          sedangIkut ? "Sudah Terdaftar" : "Daftar Sekarang",
-                        ),
+                        child: Text(sedangIkut ? "Sudah Terdaftar" : "Daftar Sekarang"),
                       ),
                     ],
                   ),
@@ -320,13 +279,8 @@ class _DaftarLombaState extends State<DaftarLomba> {
   Widget _placeholderImage() {
     return Container(
       height: 100,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(
-        child: Icon(Icons.image_not_supported, color: Colors.grey),
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)),
+      child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
     );
   }
 
@@ -337,19 +291,8 @@ class _DaftarLombaState extends State<DaftarLomba> {
         children: [
           Icon(icon, size: 16, color: kPrimaryColor),
           const SizedBox(width: 8),
-          Text(
-            "$label: ",
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value ?? '-',
-              style: const TextStyle(fontSize: 13, color: Colors.black87),
-            ),
-          ),
+          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          Expanded(child: Text(value ?? '-', style: const TextStyle(fontSize: 13, color: Colors.black87))),
         ],
       ),
     );
@@ -357,14 +300,8 @@ class _DaftarLombaState extends State<DaftarLomba> {
 
   @override
   Widget build(BuildContext context) {
-    // ── Loading ──────────────────────────────────────────────
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: kPrimaryColor),
-      );
-    }
+    if (_isLoading) return const Center(child: CircularProgressIndicator(color: kPrimaryColor));
 
-    // ── Empty State ──────────────────────────────────────────
     if (_lombaList.isEmpty) {
       return Center(
         child: Column(
@@ -375,30 +312,17 @@ class _DaftarLombaState extends State<DaftarLomba> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 16,
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 16)],
               ),
-              child: const Icon(
-                Icons.inbox_outlined,
-                size: 48,
-                color: kPrimaryColor,
-              ),
+              child: const Icon(Icons.inbox_outlined, size: 48, color: kPrimaryColor),
             ),
             const SizedBox(height: 12),
-            const Text(
-              "Tidak ada data lomba",
-              style: TextStyle(color: Colors.grey, fontSize: 15),
-            ),
+            const Text("Tidak ada data lomba", style: TextStyle(color: Colors.grey, fontSize: 15)),
           ],
         ),
       );
     }
 
-    // ── Grid ─────────────────────────────────────────────────
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -421,48 +345,24 @@ class _DaftarLombaState extends State<DaftarLomba> {
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(kBorderRadius),
-                    ),
-                    child:
-                        lomba.gambarPath != null && lomba.gambarPath!.isNotEmpty
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(kBorderRadius)),
+                    child: lomba.gambarPath != null && lomba.gambarPath!.isNotEmpty
                         ? (lomba.gambarPath!.startsWith('http')
                             ? Image.network(
                                 lomba.gambarPath!,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.broken_image, color: Colors.grey),
-                                ),
+                                errorBuilder: (_, __, ___) => _placeholderImage(),
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
                                   return const Center(child: CircularProgressIndicator());
                                 },
                               )
                             : lomba.gambarPath!.startsWith('assets/')
-                                ? Image.asset(
-                                    lomba.gambarPath!,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                                    ),
-                                  )
-                                : Image.file(
-                                    File(lomba.gambarPath!),
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                                    ),
-                                  ))
-                        : Container(
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.image, color: Colors.grey),
-                          ),
+                                ? Image.asset(lomba.gambarPath!, width: double.infinity, fit: BoxFit.cover)
+                                : Image.file(File(lomba.gambarPath!), width: double.infinity, fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => _placeholderImage()))
+                        : _placeholderImage(),
                   ),
                 ),
                 Padding(
@@ -471,30 +371,17 @@ class _DaftarLombaState extends State<DaftarLomba> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        lomba.judul ?? "Tanpa Judul",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
+                        lomba.judul,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.people_outline,
-                            size: 13,
-                            color: kPrimaryColor,
-                          ),
+                          const Icon(Icons.people_outline, size: 13, color: kPrimaryColor),
                           const SizedBox(width: 4),
-                          Text(
-                            "Kuota: ${lomba.kuota ?? 0}",
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 11,
-                            ),
-                          ),
+                          Text("Kuota: ${lomba.kuota ?? 0}", style: TextStyle(color: Colors.grey[700], fontSize: 11)),
                         ],
                       ),
                     ],

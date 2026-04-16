@@ -266,6 +266,13 @@ class _Widget2State extends State<Widget2> {
                   child: ElevatedButton(
                     style: kPrimaryButtonStyle(),
                     onPressed: () async {
+                      // Tampilkan loading
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(child: CircularProgressIndicator()),
+                      );
+
                       final lomba = LombaModel(
                         id: id,
                         judul: _judulCtrl.text,
@@ -276,12 +283,25 @@ class _Widget2State extends State<Widget2> {
                         deskripsi: _deskripsiCtrl.text,
                         tanggal: _tanggalCtrl.text,
                       );
-                      id == null
-                          ? await LombaController.insertLomba(lomba)
-                          : await LombaController.updateLomba(lomba);
+
+                      if (id == null) {
+                        await LombaController.insertLomba(lomba);
+                      } else {
+                        await LombaController.updateLomba(lomba);
+                      }
+
                       await _refreshLomba();
+                      
                       if (!mounted) return;
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(); // Tutup loading
+                      Navigator.of(context).pop(); // Tutup bottom sheet
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(id == null ? 'Lomba berhasil ditambahkan' : 'Lomba berhasil diperbarui'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
                     },
                     child: Text(id == null ? 'Simpan' : 'Update'),
                   ),

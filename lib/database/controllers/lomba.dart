@@ -6,90 +6,94 @@ class LombaController {
   static final CollectionReference _lombaCollection =
       FirebaseFirestore.instance.collection('lomba');
 
-  // ==================== CREATE ====================
-
-  static Future<void> insertLomba(LombaModel data) async {
-    try {
-      // 1. Upload gambar jika ada
-      if (data.gambarPath != null && !data.gambarPath!.startsWith('http')) {
-        String? downloadUrl = await StorageService.uploadImage(data.gambarPath!, 'lomba_images');
-        if (downloadUrl != null) {
-          // Ganti path lokal dengan URL Storage
-          data = LombaModel(
-            id: data.id,
-            judul: data.judul,
-            gambarPath: downloadUrl,
-            kuota: data.kuota,
-            jenis: data.jenis,
-            tanggal: data.tanggal,
-            lokasi: data.lokasi,
-            deskripsi: data.deskripsi,
-          );
-        }
-      }
-
-      // 2. Ambil DocumentReference baru untuk generate ID otomatis
-      DocumentReference docRef = _lombaCollection.doc();
-      
-      // 3. Set ID tersebut ke dalam model
-      data.id = docRef.id;
-
-      // 4. Simpan data (sudah termasuk field 'id' di dalam map)
-      await docRef.set(data.toMap());
-    } catch (e) {
-      print("Error insertLomba: $e");
-    }
-  }
-
   // ==================== READ ====================
 
   static Future<List<LombaModel>> getAllLomba() async {
     try {
       QuerySnapshot querySnapshot = await _lombaCollection.get();
-      return querySnapshot.docs
-          .map((doc) => LombaModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        return LombaModel.fromMap(doc.data() as Map<String, dynamic>,
+            docId: doc.id);
+      }).toList();
     } catch (e) {
       print("Error getAllLomba: $e");
       return [];
     }
   }
 
+  // ==================== CREATE ====================
+
+  static Future<void> insertLomba(LombaModel data) async {
+    try {
+      print("LombaController: Menambahkan lomba baru...");
+      String? downloadUrl = data.gambarPath;
+
+      // 1. Upload gambar jika path-nya adalah path lokal HP
+      if (data.gambarPath != null && !data.gambarPath!.startsWith('http') && data.gambarPath!.isNotEmpty) {
+        downloadUrl = await StorageService.uploadImage(data.gambarPath!, 'lomba_images');
+      }
+
+      // 2. Gunakan ID otomatis dari Firestore
+      DocumentReference docRef = _lombaCollection.doc();
+      
+      // 3. Update model dengan URL hasil upload dan ID dokumen
+      LombaModel finalData = LombaModel(
+        id: docRef.id,
+        judul: data.judul,
+        gambarPath: downloadUrl,
+        kuota: data.kuota,
+        jenis: data.jenis,
+        tanggal: data.tanggal,
+        lokasi: data.lokasi,
+        deskripsi: data.deskripsi,
+      );
+
+      // 4. Simpan ke Firestore
+      await docRef.set(finalData.toMap());
+      print("LombaController: Berhasil menyimpan lomba ke Firestore.");
+    } catch (e) {
+      print("LombaController ERROR (insertLomba): $e");
+    }
+  }
+
   // ==================== UPDATE ====================
 
   static Future<void> updateLomba(LombaModel data) async {
-    if (data.id == null) throw Exception("Gagal Update: ID Lomba tidak ditemukan");
+    if (data.id == null) {
+      print("LombaController ERROR: ID Lomba tidak ditemukan untuk update.");
+      return;
+    }
+    
     try {
-      // 1. Cek apakah gambar diubah (path lokal)
-      if (data.gambarPath != null && !data.gambarPath!.startsWith('http')) {
+      print("LombaController: Mengupdate lomba ID: ${data.id}");
+      String? finalUrl = data.gambarPath;
+
+      // 1. Cek apakah gambar diubah ke file lokal baru
+      if (data.gambarPath != null && !data.gambarPath!.startsWith('http') && data.gambarPath!.isNotEmpty) {
         // Upload gambar baru
-        String? downloadUrl = await StorageService.uploadImage(data.gambarPath!, 'lomba_images');
+        finalUrl = await StorageService.uploadImage(data.gambarPath!, 'lomba_images');
         
-        if (downloadUrl != null) {
-          // Hapus gambar lama dari Storage
+        if (finalUrl != null) {
+          // Hapus gambar lama dari Storage untuk menghemat ruang
           DocumentSnapshot oldDoc = await _lombaCollection.doc(data.id).get();
           if (oldDoc.exists) {
-            String? oldUrl = (oldDoc.data() as Map<String, dynamic>)['gambarPath'];
-            await StorageService.deleteImage(oldUrl);
+            Map<String, dynamic> oldData = oldDoc.data() as Map<String, dynamic>;
+            String? oldUrl = oldData['gambarPath'];
+            if (oldUrl != null && oldUrl.startsWith('http')) {
+              await StorageService.deleteImage(oldUrl);
+            }
           }
-          
-          // Gunakan URL baru
-          data = LombaModel(
-            id: data.id,
-            judul: data.judul,
-            gambarPath: downloadUrl,
-            kuota: data.kuota,
-            jenis: data.jenis,
-            tanggal: data.tanggal,
-            lokasi: data.lokasi,
-            deskripsi: data.deskripsi,
-          );
         }
       }
       
-      await _lombaCollection.doc(data.id).update(data.toMap());
+      // 2. Update data di Firestore
+      Map<String, dynamic> updateData = data.toMap();
+      updateData['gambarPath'] = finalUrl; // Pastikan menggunakan URL terbaru
+      
+      await _lombaCollection.doc(data.id).update(updateData);
+      print("LombaController: Berhasil update data lomba.");
     } catch (e) {
-      print("Error updateLomba: $e");
+      print("LombaController ERROR (updateLomba): $e");
     }
   }
 

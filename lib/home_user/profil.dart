@@ -63,7 +63,18 @@ class _ProfilUserState extends State<ProfilUser> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && _user != null) {
+      // Tampilkan loading dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
       await UserController.updateUserProfile(_user!.id!, image.path);
+      
+      if (mounted) Navigator.pop(context); // Tutup loading
+
       await _fetchUserData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,8 +112,17 @@ class _ProfilUserState extends State<ProfilUser> {
               TextField(controller: namaCtrl,
                   decoration: decorationConstant(hintText: 'Nama Lengkap', labelText: 'Nama', prefixIcon: Icons.person_outline)),
               const SizedBox(height: 12),
-              TextField(controller: emailCtrl,
-                  decoration: decorationConstant(hintText: 'Email', labelText: 'Email', prefixIcon: Icons.email_outlined)),
+              // ✅ FIX: Email dibuat ReadOnly
+              TextField(
+                controller: emailCtrl,
+                readOnly: true,
+                style: const TextStyle(color: Colors.grey),
+                decoration: decorationConstant(
+                  hintText: 'Email',
+                  labelText: 'Email (Tidak dapat diubah)',
+                  prefixIcon: Icons.email_outlined,
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(controller: telpCtrl, keyboardType: TextInputType.phone,
                   decoration: decorationConstant(hintText: 'No. Telepon', labelText: 'Telepon', prefixIcon: Icons.phone_outlined)),

@@ -12,7 +12,7 @@ class AdminModel {
     required this.password,
     this.nama,
     this.profilePath,
-    this.role = 'admin', // Defaultnya admin
+    this.role = 'super', // Defaultnya admin
   });
 
   // Mengubah Map dari database ke Objek AdminModel

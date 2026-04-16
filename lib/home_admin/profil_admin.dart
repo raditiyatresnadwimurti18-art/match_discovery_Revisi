@@ -56,6 +56,14 @@ class _ProfilAdminState extends State<ProfilAdmin> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && _admin != null) {
+      // Tampilkan loading dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
       AdminModel updated = AdminModel(
         id: _admin!.id,
         username: _admin!.username,
@@ -65,6 +73,9 @@ class _ProfilAdminState extends State<ProfilAdmin> {
         role: _admin!.role,
       );
       await AdminController.updateAdminProfile(updated);
+
+      if (mounted) Navigator.pop(context); // Tutup loading
+
       await _fetchAdminData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

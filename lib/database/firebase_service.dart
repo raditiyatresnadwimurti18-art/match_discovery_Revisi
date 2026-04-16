@@ -10,24 +10,33 @@ class StorageService {
   static Future<String?> uploadImage(String filePath, String folder) async {
     try {
       File file = File(filePath);
-      if (!file.existsSync()) return null;
+      if (!file.existsSync()) {
+        print("StorageService: File tidak ditemukan di $filePath");
+        return null;
+      }
 
-      // Buat nama file unik berdasarkan timestamp
-      String fileName = "${DateTime.now().millisecondsSinceEpoch}${path.extension(filePath)}";
-      
-      // Referensi ke lokasi penyimpanan
+      // Buat referensi unik di Firebase Storage
+      String fileName = "${DateTime.now().millisecondsSinceEpoch}_${path.basename(filePath)}";
       Reference ref = _storage.ref().child(folder).child(fileName);
 
-      // Mulai upload
-      UploadTask uploadTask = ref.putFile(file);
+      print("StorageService: Memulai upload ke Firebase ($folder/$fileName)...");
       
-      // Tunggu selesai dan ambil URL
+      // Metadata untuk membantu Firebase mengenali jenis file
+      SettableMetadata metadata = SettableMetadata(contentType: 'image/jpeg');
+
+      // Upload file
+      UploadTask uploadTask = ref.putFile(file, metadata);
+      
+      // Monitor progres (opsional untuk debug)
       TaskSnapshot snapshot = await uploadTask;
+      
+      // Ambil URL publik
       String downloadUrl = await snapshot.ref.getDownloadURL();
       
+      print("StorageService: Upload BERHASIL. URL: $downloadUrl");
       return downloadUrl;
     } catch (e) {
-      print("Error StorageService (uploadImage): $e");
+      print("StorageService ERROR: $e");
       return null;
     }
   }

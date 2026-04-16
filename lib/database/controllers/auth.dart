@@ -54,24 +54,29 @@ class AuthController {
       );
 
       String uid = credential.user!.uid;
-      DocumentSnapshot doc = await _db.collection('users').doc(uid).get();
+      
+      // Cek di koleksi users (User Biasa)
+      DocumentSnapshot userDoc = await _db.collection('users').doc(uid).get();
 
-      if (doc.exists) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        String role = data['role'] ?? 'user';
-
-        // ✅ Simpan status login
+      if (userDoc.exists) {
+        Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
+        await PreferenceHandler.storingIsLogin(true);
+        await PreferenceHandler.setRole('user');
+        await PreferenceHandler.storingUserId(uid);
+        return LoginModel.fromMap(data, docId: uid);
+      }
+      
+      // Jika tidak ada di users, cek di admins (Jika admin login pakai email/auth)
+      DocumentSnapshot adminDoc = await _db.collection('admins').doc(uid).get();
+      if (adminDoc.exists) {
+        Map<String, dynamic> data = adminDoc.data() as Map<String, dynamic>;
+        String role = data['role'] ?? 'admin';
         await PreferenceHandler.storingIsLogin(true);
         await PreferenceHandler.setRole(role);
-
-        if (role == 'admin' || role == 'super') {
-          await PreferenceHandler.storingAdminId(uid);
-          return AdminModel.fromMap(data, docId: uid);
-        } else {
-          await PreferenceHandler.storingUserId(uid);
-          return LoginModel.fromMap(data, docId: uid);
-        }
+        await PreferenceHandler.storingAdminId(uid);
+        return AdminModel.fromMap(data, docId: uid);
       }
+
       return null;
     } catch (e) {
       print("Error login: $e");
@@ -113,13 +118,12 @@ class AuthController {
       );
     }
 
-    // Query Firestore for admin
+    // Query Firestore for admin in 'admins' collection
     try {
       QuerySnapshot querySnapshot = await _db
-          .collection('users')
+          .collection('admins')
           .where('username', isEqualTo: username)
           .where('password', isEqualTo: password)
-          .where('role', whereIn: ['admin', 'super'])
           .limit(1)
           .get();
 
