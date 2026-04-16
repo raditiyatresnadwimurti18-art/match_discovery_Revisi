@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:match_discovery/database/firebase_service.dart';
+import 'package:match_discovery/database/notification_service.dart';
 import 'package:match_discovery/models/lomba_model.dart';
 
 class LombaController {
@@ -57,6 +58,17 @@ class LombaController {
 
       // 4. Simpan ke Firestore
       await docRef.set(finalData.toMap());
+
+      // 5. Kirim Notifikasi (Trigger)
+      try {
+        await NotificationService.sendLombaNotification(
+          finalData.judul ?? 'Lomba Baru',
+          finalData.lokasi ?? 'Lokasi segera ditentukan',
+        );
+      } catch (e) {
+        print("LombaController: Gagal mengirim notifikasi: $e");
+      }
+
       return {'success': true};
     } catch (e) {
       return {'success': false, 'message': e.toString()};

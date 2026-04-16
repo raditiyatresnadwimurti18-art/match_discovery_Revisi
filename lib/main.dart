@@ -1,16 +1,36 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/controllers/auth.dart';
+import 'package:match_discovery/database/notification_service.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/firebase_options.dart';
 import 'package:match_discovery/models/admin_model.dart';
 import 'package:match_discovery/view/splash.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Handling a background message: ${message.messageId}");
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Inisialisasi Notifikasi
+  await NotificationService.init();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   await PreferenceHandler.init(); // Inisialisasi preferensi
+
+  // Aktifkan listener jika sudah login
+  if (PreferenceHandler.getIsLogin() == true) {
+    NotificationService.subscribeToLombaTopic();
+    NotificationService.listenToNewLomba();
+  }
+
   await setupSuperAdmin();
   runApp(const MainApp());
 }

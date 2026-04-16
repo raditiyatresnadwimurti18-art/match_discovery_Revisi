@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/database/firebase_service.dart';
+import 'package:match_discovery/database/notification_service.dart';
 import 'package:match_discovery/firebase_options.dart';
 import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/models/admin_model.dart';
@@ -66,6 +67,11 @@ class AuthController {
         await PreferenceHandler.storingIsLogin(true);
         await PreferenceHandler.setRole('user');
         await PreferenceHandler.storingUserId(uid);
+        
+        // Subscribe to notifications
+        await NotificationService.subscribeToLombaTopic();
+        NotificationService.listenToNewLomba(); // Mulai dengarkan data baru
+        
         return LoginModel.fromMap(data, docId: uid);
       }
       
@@ -77,6 +83,11 @@ class AuthController {
         await PreferenceHandler.storingIsLogin(true);
         await PreferenceHandler.setRole(role);
         await PreferenceHandler.storingAdminId(uid);
+        
+        // Subscribe to notifications
+        await NotificationService.subscribeToLombaTopic();
+        NotificationService.listenToNewLomba(); // Mulai dengarkan data baru
+        
         return AdminModel.fromMap(data, docId: uid);
       }
 
