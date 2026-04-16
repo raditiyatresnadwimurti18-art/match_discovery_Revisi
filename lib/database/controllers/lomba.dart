@@ -29,7 +29,10 @@ class LombaController {
       String? downloadUrl = data.gambarPath;
 
       // 1. Upload gambar jika path-nya adalah path lokal HP
-      if (data.gambarPath != null && !data.gambarPath!.startsWith('http') && data.gambarPath!.isNotEmpty) {
+      if (data.gambarPath != null && 
+          !data.gambarPath!.startsWith('http') && 
+          !data.gambarPath!.startsWith('data:image') &&
+          data.gambarPath!.isNotEmpty) {
         try {
           downloadUrl = await StorageService.uploadImage(data.gambarPath!, 'lomba_images');
         } catch (e) {
@@ -69,7 +72,10 @@ class LombaController {
       String? finalUrl = data.gambarPath;
 
       // 1. Cek apakah gambar diubah ke file lokal baru
-      if (data.gambarPath != null && !data.gambarPath!.startsWith('http') && data.gambarPath!.isNotEmpty) {
+      if (data.gambarPath != null && 
+          !data.gambarPath!.startsWith('http') && 
+          !data.gambarPath!.startsWith('data:image') &&
+          data.gambarPath!.isNotEmpty) {
         try {
           finalUrl = await StorageService.uploadImage(data.gambarPath!, 'lomba_images');
           

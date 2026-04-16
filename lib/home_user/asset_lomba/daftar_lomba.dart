@@ -355,21 +355,29 @@ class _DaftarLombaState extends State<DaftarLomba> {
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(kBorderRadius)),
                     child: lomba.gambarPath != null && lomba.gambarPath!.isNotEmpty
-                        ? (lomba.gambarPath!.startsWith('http')
-                            ? Image.network(
-                                lomba.gambarPath!,
+                        ? (lomba.gambarPath!.startsWith('data:image')
+                            ? Image.memory(
+                                base64Decode(lomba.gambarPath!.split(',').last),
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _placeholderImage(),
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
-                                },
                               )
-                            : lomba.gambarPath!.startsWith('assets/')
-                                ? Image.asset(lomba.gambarPath!, width: double.infinity, fit: BoxFit.cover)
-                                : Image.file(File(lomba.gambarPath!), width: double.infinity, fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _placeholderImage()))
+                            : lomba.gambarPath!.startsWith('http')
+                                ? Image.network(
+                                    lomba.gambarPath!,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => _placeholderImage(),
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(child: CircularProgressIndicator());
+                                    },
+                                  )
+                                : lomba.gambarPath!.startsWith('assets/')
+                                    ? Image.asset(lomba.gambarPath!, width: double.infinity, fit: BoxFit.cover)
+                                    : Image.file(File(lomba.gambarPath!),
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => _placeholderImage()))
                         : _placeholderImage(),
                   ),
                 ),

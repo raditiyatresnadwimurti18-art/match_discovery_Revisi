@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
@@ -182,13 +183,21 @@ class _HistoryUserState extends State<HistoryUser> {
                 bottomLeft: Radius.circular(kBorderRadius),
               ),
               child: gambar != null && gambar.isNotEmpty
-                  ? Image.file(
-                      File(gambar),
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholderBox(),
-                    )
+                  ? (gambar.startsWith('data:image')
+                      ? Image.memory(
+                          base64Decode(gambar.split(',').last),
+                          width: 90,
+                          height: 90,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholderBox(),
+                        )
+                      : Image.file(
+                          File(gambar),
+                          width: 90,
+                          height: 90,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholderBox(),
+                        ))
                   : _placeholderBox(),
             ),
             // Info

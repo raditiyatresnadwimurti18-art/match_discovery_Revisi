@@ -373,14 +373,22 @@ class _Widget2State extends State<Widget2> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (lomba.gambarPath != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: lomba.gambarPath!.startsWith('http')
-                      ? Image.network(lomba.gambarPath!, height: 200)
-                      : lomba.gambarPath!.startsWith('assets/')
-                          ? Image.asset(lomba.gambarPath!, height: 200)
-                          : Image.file(File(lomba.gambarPath!), height: 200),
-                ),
+                if (lomba.gambarPath != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: lomba.gambarPath!.startsWith('data:image')
+                        ? Image.memory(
+                            base64Decode(lomba.gambarPath!.split(',').last),
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          )
+                        : lomba.gambarPath!.startsWith('http')
+                            ? Image.network(lomba.gambarPath!, height: 200)
+                            : lomba.gambarPath!.startsWith('assets/')
+                                ? Image.asset(lomba.gambarPath!, height: 200)
+                                : Image.file(File(lomba.gambarPath!), height: 200),
+                  ),
               const SizedBox(height: 10),
               _detailRow(Icons.emoji_events_outlined, "Judul", lomba.judul),
               _detailRow(Icons.location_on_outlined, "Lokasi", lomba.lokasi),
@@ -478,26 +486,33 @@ class _Widget2State extends State<Widget2> {
                           child: lomba.gambarPath != null
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: lomba.gambarPath!.startsWith('http')
-                                      ? Image.network(
-                                          lomba.gambarPath!,
+                                  child: lomba.gambarPath!.startsWith('data:image')
+                                      ? Image.memory(
+                                          base64Decode(lomba.gambarPath!.split(',').last),
                                           width: 50,
                                           height: 50,
                                           fit: BoxFit.cover,
                                         )
-                                      : lomba.gambarPath!.startsWith('assets/')
-                                          ? Image.asset(
+                                      : lomba.gambarPath!.startsWith('http')
+                                          ? Image.network(
                                               lomba.gambarPath!,
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,
                                             )
-                                          : Image.file(
-                                              File(lomba.gambarPath!),
-                                              width: 50,
-                                              height: 50,
-                                              fit: BoxFit.cover,
-                                            ),
+                                          : lomba.gambarPath!.startsWith('assets/')
+                                              ? Image.asset(
+                                                  lomba.gambarPath!,
+                                                  width: 50,
+                                                  height: 50,
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : Image.file(
+                                                  File(lomba.gambarPath!),
+                                                  width: 50,
+                                                  height: 50,
+                                                  fit: BoxFit.cover,
+                                                ),
                                 )
                               : const Icon(Icons.image_not_supported),
                         ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/util/app_theme.dart';
@@ -159,12 +160,19 @@ class _HistoryLombaState extends State<HistoryLomba> {
               Stack(
                 children: [
                   event['gambarPath'] != null
-                      ? Image.file(
-                          File(event['gambarPath']),
-                          height: 160,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        )
+                      ? (event['gambarPath']!.toString().startsWith('data:image')
+                          ? Image.memory(
+                              base64Decode(event['gambarPath']!.toString().split(',').last),
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(event['gambarPath']),
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ))
                       : Container(
                           height: 160,
                           width: double.infinity,
