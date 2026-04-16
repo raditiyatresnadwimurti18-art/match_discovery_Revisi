@@ -121,6 +121,35 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
     );
   }
 
+  void _confirmDeleteUser(LoginModel user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi Hapus User"),
+        content: Text("Apakah Anda yakin ingin menghapus user ${user.nama}?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await UserController.deleteUser(user.id!);
+              if (!mounted) return;
+              Navigator.pop(context);
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("User berhasil dihapus")),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("Hapus", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUserList() {
     return FutureBuilder<List<LoginModel>>(
       future: _loadUser(),
@@ -167,6 +196,10 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
                     Text(user.email ?? "Tidak ada email"),
                     if (user.tlpon != null) Text(user.tlpon!),
                   ],
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.person_remove, color: Colors.red),
+                  onPressed: () => _confirmDeleteUser(user),
                 ),
               ),
             );

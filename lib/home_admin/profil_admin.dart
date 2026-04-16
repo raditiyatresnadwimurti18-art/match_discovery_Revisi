@@ -340,7 +340,10 @@ class _ProfilAdminState extends State<ProfilAdmin> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: kPrimaryAppBar(title: 'Profil Admin', roundedBottom: false),
+      appBar: kPrimaryAppBar(
+        title: 'Profil Admin',
+        roundedBottom: false,
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -368,46 +371,58 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                           border: Border.all(color: kAccentColor, width: 3.5),
                         ),
                         child: ClipOval(
-                          child: _admin?.profilePath != null &&
-                                  _admin!.profilePath!.isNotEmpty
-                              ? (_admin!.profilePath!.startsWith('data:image')
-                                  ? Image.memory(
-                                      base64Decode(_admin!.profilePath!.split(',').last),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : _admin!.profilePath!.startsWith('http')
-                                      ? Image.network(
-                                          _admin!.profilePath!,
+                          child: _admin?.role == 'super'
+                              ? Image.asset(
+                                  'assets/images/logo.png',
+                                  fit: BoxFit.cover,
+                                )
+                              : (_admin?.profilePath != null &&
+                                      _admin!.profilePath!.isNotEmpty
+                                  ? (_admin!.profilePath!.startsWith('data:image')
+                                      ? Image.memory(
+                                          base64Decode(_admin!.profilePath!
+                                              .split(',')
+                                              .last),
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80),
                                         )
-                                      : Image.file(
-                                          File(_admin!.profilePath!),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80),
-                                        ))
-                              : const Icon(Icons.person, size: 80),
+                                      : _admin!.profilePath!.startsWith('http')
+                                          ? Image.network(
+                                              _admin!.profilePath!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const Icon(Icons.person,
+                                                      size: 80),
+                                            )
+                                          : Image.file(
+                                              File(_admin!.profilePath!),
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const Icon(Icons.person,
+                                                      size: 80),
+                                            ))
+                                  : const Icon(Icons.person, size: 80)),
                         ),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: kAccentColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 18,
+                      if (_admin?.role != 'super')
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: kAccentColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -463,10 +478,12 @@ class _ProfilAdminState extends State<ProfilAdmin> {
               leading: const Icon(Icons.badge, color: kPrimaryColor),
               title: const Text("Username"),
               subtitle: Text(_admin?.username ?? "-"),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit_note, color: kPrimaryColor),
-                onPressed: _showEditSelfDialog,
-              ),
+              trailing: _admin?.role == 'super'
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.edit_note, color: kPrimaryColor),
+                      onPressed: _showEditSelfDialog,
+                    ),
             ),
             const SizedBox(height: 80),
 
