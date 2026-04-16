@@ -223,23 +223,31 @@ await _db.collection('admins').doc(uid).set({
 
     // 2. Coba login via Firebase Auth
     try {
-      // Kita perlu mencari email berdasarkan username di Firestore terlebih dahulu
-      // karena Firebase Auth butuh email untuk sign in.
-      QuerySnapshot adminSearch = await _db
-          .collection('admins')
-          .where('username', isEqualTo: username)
-          .limit(1)
-          .get();
+      print("AuthController: Mencoba mencari data admin untuk: $username");
+      String? targetEmail;
+      
+      // A. Cek apakah yang diinput adalah format email
+      if (username.contains('@')) {
+        targetEmail = username;
+      } else {
+        // B. Jika bukan email, cari email berdasarkan username di Firestore
+        QuerySnapshot adminSearch = await _db
+            .collection('admins')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
 
-      if (adminSearch.docs.isEmpty) {
-        print("AuthController: Admin dengan username $username tidak ditemukan.");
-        return null;
+        if (adminSearch.docs.isNotEmpty) {
+          targetEmail = adminSearch.docs.first.get('email');
+        }
       }
 
-      String email = adminSearch.docs.first.get('email') ?? "${username}@admin.com";
+      // C. Jika email tetap tidak ditemukan, gunakan default (format lama)
+      targetEmail ??= "${username}@admin.com";
 
+      print("AuthController: Mencoba SignIn Auth dengan Email: $targetEmail");
       UserCredential credential = await _auth.signInWithEmailAndPassword(
-        email: email,
+        email: targetEmail,
         password: password,
       );
 
