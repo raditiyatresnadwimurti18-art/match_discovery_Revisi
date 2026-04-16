@@ -20,6 +20,7 @@ dependencies:
   firebase_core: ^3.15.2
   firebase_auth: ^5.3.1
   firebase_storage: ^12.4.10
+  flutter_image_compress: ^2.4.0
 
 dev_dependencies:
   flutter_test:

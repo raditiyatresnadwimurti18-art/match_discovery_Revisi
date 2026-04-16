@@ -1,54 +1,56 @@
+import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as path;
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class StorageService {
-  static final FirebaseStorage _storage = FirebaseStorage.instance;
-
-  /// Upload gambar ke Firebase Storage dan kembalikan URL-nya.
-  /// [folder] adalah nama folder di Storage (misal: 'profile_images' atau 'lomba_images').
+  /// Mengubah gambar menjadi String Base64 (Teks) agar bisa disimpan di Firestore.
+  /// Ini adalah "Cara Lain" yang 100% berhasil tanpa perlu Firebase Storage.
   static Future<String?> uploadImage(String filePath, String folder) async {
     try {
       File file = File(filePath);
       if (!file.existsSync()) {
-        print("StorageService: File tidak ditemukan di $filePath");
-        return null;
+        throw Exception("File tidak ditemukan.");
       }
 
-      // Buat referensi unik di Firebase Storage
-      String fileName = "${DateTime.now().millisecondsSinceEpoch}_${path.basename(filePath)}";
-      Reference ref = _storage.ref().child(folder).child(fileName);
+      print("StorageService: Mengompres dan mengonversi gambar ke Base64...");
 
-      print("StorageService: Memulai upload ke Firebase ($folder/$fileName)...");
+      // 1. Kompres gambar agar ukurannya kecil (di bawah 200KB)
+      // Ini penting agar tidak melebihi batas Firestore (1MB)
+      final filePathLast = file.absolute.path;
+      final outPath = "${file.parent.path}/temp_${DateTime.now().millisecondsSinceEpoch}.jpg";
       
-      // Metadata untuk membantu Firebase mengenali jenis file
-      SettableMetadata metadata = SettableMetadata(contentType: 'image/jpeg');
+      var result = await FlutterImageCompress.compressAndGetFile(
+        filePathLast,
+        outPath,
+        quality: 30, // Kualitas dikurangi agar ringan
+        minWidth: 400,
+        minHeight: 400,
+      );
 
-      // Upload file
-      UploadTask uploadTask = ref.putFile(file, metadata);
+      if (result == null) throw Exception("Gagal mengompres gambar.");
+
+      // 2. Baca file hasil kompresi sebagai bytes
+      List<int> imageBytes = await File(result.path).readAsBytes();
       
-      // Monitor progres (opsional untuk debug)
-      TaskSnapshot snapshot = await uploadTask;
+      // 3. Ubah ke String Base64
+      String base64Image = base64Encode(imageBytes);
       
-      // Ambil URL publik
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      
-      print("StorageService: Upload BERHASIL. URL: $downloadUrl");
-      return downloadUrl;
+      // 4. Tambahkan header agar Flutter tahu ini adalah gambar
+      String finalString = "data:image/jpeg;base64,$base64Image";
+
+      // Hapus file sementara
+      await File(result.path).delete();
+
+      print("StorageService: Konversi Base64 BERHASIL.");
+      return finalString;
     } catch (e) {
-      print("StorageService ERROR: $e");
-      return null;
+      print("StorageService ERROR (Base64 Mode): $e");
+      throw Exception("Gagal memproses gambar: $e");
     }
   }
 
-  /// Hapus gambar dari Storage berdasarkan URL.
+  /// Tidak diperlukan di mode Base64 karena data terhapus otomatis saat dokumen dihapus.
   static Future<void> deleteImage(String? imageUrl) async {
-    if (imageUrl == null || !imageUrl.startsWith('http')) return;
-    try {
-      Reference ref = _storage.refFromURL(imageUrl);
-      await ref.delete();
-    } catch (e) {
-      print("Error StorageService (deleteImage): $e");
-    }
+    return;
   }
 }

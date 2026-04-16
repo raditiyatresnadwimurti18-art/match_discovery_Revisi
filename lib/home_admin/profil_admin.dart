@@ -1,9 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/extension/navigator.dart';
-import 'package:match_discovery/home_admin/daftar_admin.dart';
+import 'package:match_discovery/home_admin/daftar_admin-user.dart';
 import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/models/admin_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
@@ -72,21 +73,35 @@ class _ProfilAdminState extends State<ProfilAdmin> {
         profilePath: image.path,
         role: _admin!.role,
       );
-      await AdminController.updateAdminProfile(updated);
+      bool success = await AdminController.updateAdminProfile(updated);
 
       if (mounted) Navigator.pop(context); // Tutup loading
 
-      await _fetchAdminData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto profil admin berhasil diperbarui')),
-      );
+      if (success) {
+        await _fetchAdminData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil admin berhasil diperbarui'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Gagal memperbarui foto profil admin. Pastikan Anda bukan akun lokal (Super Admin 111) dan cek koneksi.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _showAddAdminDialog(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final userCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
     final passCtrl = TextEditingController();
 
     showDialog(
@@ -113,21 +128,19 @@ class _ProfilAdminState extends State<ProfilAdmin> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: decorationConstant(
-                  hintText: 'Nama Lengkap',
-                  labelText: 'Nama',
-                  prefixIcon: Icons.person_outline,
-                ),
+              const Text(
+                "Daftarkan email dan password staff. Detail lainnya dapat dilengkapi oleh staff setelah login.",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
-                controller: userCtrl,
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
                 decoration: decorationConstant(
-                  hintText: 'Username',
-                  labelText: 'Username',
-                  prefixIcon: Icons.alternate_email,
+                  hintText: 'Email untuk Login',
+                  labelText: 'Email',
+                  prefixIcon: Icons.email_outlined,
                 ),
               ),
               const SizedBox(height: 12),
@@ -151,32 +164,63 @@ class _ProfilAdminState extends State<ProfilAdmin> {
           ElevatedButton(
             style: kPrimaryButtonStyle(radius: 12),
             onPressed: () async {
-              if (nameCtrl.text.isNotEmpty &&
-                  userCtrl.text.isNotEmpty &&
-                  passCtrl.text.isNotEmpty) {
-                await AdminController.addAdmin(
+              if (emailCtrl.text.isNotEmpty && passCtrl.text.isNotEmpty) {
+                // Tampilkan loading
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
+                );
+
+                // Gunakan bagian depan email sebagai username sementara
+                String tempUsername = emailCtrl.text.split('@').first;
+
+                var result = await AdminController.addAdmin(
                   AdminModel(
-                    nama: nameCtrl.text,
-                    username: userCtrl.text,
+                    nama: 'Admin Baru',
+                    username: tempUsername,
+                    email: emailCtrl.text,
                     password: passCtrl.text,
                     role: 'admin',
                     profilePath: '',
                   ),
                 );
+
                 if (!context.mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Admin baru berhasil ditambahkan!"),
-                  ),
-                );
+                Navigator.pop(context); // Tutup loading
+
+                if (result == "success") {
+                  if (!context.mounted) return;
+                  Navigator.pop(context); // Tutup dialog tambah
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Akses Admin berhasil didaftarkan!"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  await _fetchAdminData();
+                } else {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Gagal mendaftar: ${result ?? 'Email mungkin sudah terdaftar'}",
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Semua field harus diisi!")),
+                  const SnackBar(
+                    content: Text("Email dan Password wajib diisi!"),
+                  ),
                 );
               }
             },
-            child: const Text("Simpan"),
+            child: const Text("Daftarkan"),
           ),
         ],
       ),
@@ -324,17 +368,15 @@ class _ProfilAdminState extends State<ProfilAdmin> {
                           border: Border.all(color: kAccentColor, width: 3.5),
                         ),
                         child: ClipOval(
-                          child:
-                              _admin?.profilePath != null &&
+                          child: _admin?.profilePath != null &&
                                   _admin!.profilePath!.isNotEmpty
-                              ? (_admin!.profilePath!.startsWith('http')
-                                  ? Image.network(
-                                      _admin!.profilePath!,
+                              ? (_admin!.profilePath!.startsWith('data:image')
+                                  ? Image.memory(
+                                      base64Decode(_admin!.profilePath!.split(',').last),
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80),
                                     )
-                                  : _admin!.profilePath!.startsWith('assets/')
-                                      ? Image.asset(
+                                  : _admin!.profilePath!.startsWith('http')
+                                      ? Image.network(
                                           _admin!.profilePath!,
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80),

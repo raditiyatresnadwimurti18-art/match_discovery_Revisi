@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
 import 'package:match_discovery/models/lomba_model.dart';
@@ -127,29 +128,36 @@ class _Widget2State extends State<Widget2> {
                 _imagePath != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: _imagePath!.startsWith('http')
-                            ? Image.network(
-                                _imagePath!,
+                        child: _imagePath!.startsWith('data:image')
+                            ? Image.memory(
+                                base64Decode(_imagePath!.split(',').last),
                                 height: 120,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
                               )
-                            : _imagePath!.startsWith('assets/')
-                                ? Image.asset(
+                            : _imagePath!.startsWith('http')
+                                ? Image.network(
                                     _imagePath!,
                                     height: 120,
                                     width: double.infinity,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
                                   )
-                                : Image.file(
-                                    File(_imagePath!),
-                                    height: 120,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
-                                  ),
+                                : _imagePath!.startsWith('assets/')
+                                    ? Image.asset(
+                                        _imagePath!,
+                                        height: 120,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                                      )
+                                    : Image.file(
+                                        File(_imagePath!),
+                                        height: 120,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                                      ),
                       )
                     : Container(
                         height: 100,
@@ -284,24 +292,35 @@ class _Widget2State extends State<Widget2> {
                         tanggal: _tanggalCtrl.text,
                       );
 
+                      Map<String, dynamic> result;
                       if (id == null) {
-                        await LombaController.insertLomba(lomba);
+                        result = await LombaController.insertLomba(lomba);
                       } else {
-                        await LombaController.updateLomba(lomba);
+                        result = await LombaController.updateLomba(lomba);
                       }
 
                       await _refreshLomba();
                       
                       if (!mounted) return;
                       Navigator.of(context).pop(); // Tutup loading
-                      Navigator.of(context).pop(); // Tutup bottom sheet
                       
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(id == null ? 'Lomba berhasil ditambahkan' : 'Lomba berhasil diperbarui'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                      if (result['success'] == true) {
+                        Navigator.of(context).pop(); // Tutup bottom sheet
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(id == null ? 'Lomba berhasil ditambahkan' : 'Lomba berhasil diperbarui'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result['message'] ?? 'Gagal menyimpan data.'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 5),
+                          ),
+                        );
+                      }
                     },
                     child: Text(id == null ? 'Simpan' : 'Update'),
                   ),

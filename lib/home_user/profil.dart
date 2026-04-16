@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/user.dart';
@@ -71,15 +72,29 @@ class _ProfilUserState extends State<ProfilUser> {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      await UserController.updateUserProfile(_user!.id!, image.path);
+      Map<String, dynamic> result = await UserController.updateUserProfile(_user!.id!, image.path);
       
       if (mounted) Navigator.pop(context); // Tutup loading
 
-      await _fetchUserData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto profil berhasil diperbarui')),
-      );
+      if (result['success'] == true) {
+        await _fetchUserData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil diperbarui'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Gagal memperbarui foto profil.'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
@@ -375,18 +390,13 @@ class _ProfilUserState extends State<ProfilUser> {
                   ),
                   child: ClipOval(
                     child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-                        ? (_user!.profilePath!.startsWith('http')
-                            ? Image.network(
-                                _user!.profilePath!,
+                        ? (_user!.profilePath!.startsWith('data:image')
+                            ? Image.memory(
+                                base64Decode(_user!.profilePath!.split(',').last),
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
-                                },
                               )
-                            : _user!.profilePath!.startsWith('assets/')
-                                ? Image.asset(
+                            : _user!.profilePath!.startsWith('http')
+                                ? Image.network(
                                     _user!.profilePath!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),

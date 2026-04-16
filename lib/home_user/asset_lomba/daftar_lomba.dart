@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
@@ -210,21 +211,28 @@ class _DaftarLombaState extends State<DaftarLomba> {
                         if (lomba.gambarPath != null && lomba.gambarPath!.isNotEmpty)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: lomba.gambarPath!.startsWith('http')
-                                ? Image.network(
-                                    lomba.gambarPath!,
+                            child: lomba.gambarPath!.startsWith('data:image')
+                                ? Image.memory(
+                                    base64Decode(lomba.gambarPath!.split(',').last),
                                     width: double.infinity,
                                     height: 160,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _placeholderImage(),
                                   )
-                                : Image.file(
-                                    File(lomba.gambarPath!),
-                                    width: double.infinity,
-                                    height: 160,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _placeholderImage(),
-                                  ),
+                                : lomba.gambarPath!.startsWith('http')
+                                    ? Image.network(
+                                        lomba.gambarPath!,
+                                        width: double.infinity,
+                                        height: 160,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                                      )
+                                    : Image.file(
+                                        File(lomba.gambarPath!),
+                                        width: double.infinity,
+                                        height: 160,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                                      ),
                           )
                         else
                           _placeholderImage(),

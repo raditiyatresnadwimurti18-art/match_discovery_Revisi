@@ -1,6 +1,7 @@
 class AdminModel {
   String? id;
   String username;
+  String? email; // Field baru untuk Firebase Auth
   String password;
   String? nama;
   String? profilePath;
@@ -9,18 +10,20 @@ class AdminModel {
   AdminModel({
     this.id,
     required this.username,
+    this.email,
     required this.password,
     this.nama,
     this.profilePath,
-    this.role = 'super', // Defaultnya admin
+    this.role = 'admin',
   });
 
   // Mengubah Map dari database ke Objek AdminModel
   factory AdminModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return AdminModel(
       id: docId ?? map['id'],
-      username: map['username'],
-      password: map['password'],
+      username: map['username'] ?? '',
+      email: map['email'],
+      password: map['password'] ?? '',
       nama: map['nama'],
       profilePath: map['profilePath'],
       role: map['role'] ?? 'admin',
@@ -32,6 +35,7 @@ class AdminModel {
     return {
       'id': id,
       'username': username,
+      'email': email,
       'password': password,
       'nama': nama,
       'profilePath': profilePath,

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/user.dart';
@@ -170,15 +171,17 @@ class _HomeUserState extends State<HomeUser> {
                 child: ClipOval(
                   child: _isGuest
                       ? const Icon(Icons.person_outline, color: Colors.white)
-                      : _user?.profilePath != null &&
-                              _user!.profilePath!.isNotEmpty
-                          ? Image.file(
-                              File(_user!.profilePath!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.person,
-                                  color: Colors.white),
-                            )
+                      : _user?.profilePath != null && _user!.profilePath!.isNotEmpty
+                          ? (_user!.profilePath!.startsWith('data:image')
+                              ? Image.memory(
+                                  base64Decode(_user!.profilePath!.split(',').last),
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.file(
+                                  File(_user!.profilePath!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white),
+                                ))
                           : const Icon(Icons.person, color: Colors.white),
                 ),
               ),
@@ -370,12 +373,16 @@ class _HomeUserState extends State<HomeUser> {
       ),
       currentAccountPicture: ClipOval(
         child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-            ? Image.file(
-                File(_user!.profilePath!),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.person, size: 50, color: Colors.white),
-              )
+            ? (_user!.profilePath!.startsWith('data:image')
+                ? Image.memory(
+                    base64Decode(_user!.profilePath!.split(',').last),
+                    fit: BoxFit.cover,
+                  )
+                : Image.file(
+                    File(_user!.profilePath!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50, color: Colors.white),
+                  ))
             : const Icon(Icons.person, size: 50, color: Colors.white),
       ),
     );

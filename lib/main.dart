@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
+import 'package:match_discovery/database/controllers/auth.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/firebase_options.dart';
 import 'package:match_discovery/models/admin_model.dart';
@@ -8,32 +9,35 @@ import 'package:match_discovery/view/splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await PreferenceHandler.init(); // Inisialisasi preferensi
-  await _initializeSuperAdmin();
+  await setupSuperAdmin();
   runApp(const MainApp());
 }
 
-Future<void> _initializeSuperAdmin() async {
+Future<void> setupSuperAdmin() async {
   bool initialized = PreferenceHandler.getSuperAdminInitialized();
   if (!initialized) {
-    // Check if super admin already exists in Firestore
-    List<AdminModel> admins = await AdminController.getSemuaAdmin();
-    bool superAdminExists = admins.any((admin) => admin.role == 'super');
-
-    if (!superAdminExists) {
-      // Add super admin to Firestore
-      AdminModel superAdmin = AdminModel(
-        nama: 'Super Admin',
-        username: '111',
-        password: '222',
-        role: 'super',
-        profilePath: '',
+    print("Main: Menginisialisasi Super Admin...");
+    try {
+      // 1. Daftarkan di Firebase Authentication (agar bisa upload gambar)
+      // Ini juga akan menyimpan datanya ke Firestore koleksi 'admins'
+      await AuthController.registerAdmin(
+        AdminModel(
+          nama: 'Super Admin',
+          username: '111',
+          password: '222',
+          email: '111@admin.com',
+          role: 'super',
+          profilePath: '',
+        ),
       );
-      await AdminController.addAdmin(superAdmin);
+      print("Main: Berhasil mendaftarkan Super Admin di Auth & Firestore.");
+    } catch (e) {
+      print("Main: Super Admin Auth mungkin sudah ada: $e");
     }
 
-    // Mark as initialized
+    // Mark as initialized agar tidak dijalankan terus menerus
     await PreferenceHandler.setSuperAdminInitialized(true);
   }
 }
