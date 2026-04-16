@@ -44,3 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 release-key.jks
+
+# Custom environment files
+lib/config/env.dart

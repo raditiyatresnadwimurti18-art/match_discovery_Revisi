@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
+import '../config/env.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -130,7 +131,7 @@ class NotificationService {
   }
 
   static Future<void> sendLombaNotification(String judul, String lokasi) async {
-    const String serverKey = 'AIzaSyB126DK-uhfXyVCbKBSJfy_ocGwJEXagMA';
+    const String serverKey = Env.fcmServerKey;
     const String fcmUrl = 'https://fcm.googleapis.com/fcm/send';
 
     final Map<String, dynamic> notificationData = {
