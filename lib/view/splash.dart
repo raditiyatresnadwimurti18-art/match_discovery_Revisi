@@ -25,8 +25,8 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
     await Future.delayed(const Duration(milliseconds: 3000));
     if (!mounted) return;
 
-    final bool? isLogin = await PreferenceHandler.getIsLogin();
-    final String? role = await PreferenceHandler.getRole();
+    final bool? isLogin = PreferenceHandler.getIsLogin();
+    final String? role = PreferenceHandler.getRole();
 
     if (!mounted) return;
 

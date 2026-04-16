@@ -14,18 +14,20 @@ class RiwayatController {
   static Future<Map<String, dynamic>> ikutiLomba(RiwayatModel riwayat) async {
     try {
       return await _firestore.runTransaction((transaction) async {
-        // 1. Cek apakah user sudah terdaftar di lomba ini (status aktif)
-        QuerySnapshot check = await _riwayatCollection
-            .where('idUser', isEqualTo: riwayat.idUser)
-            .where('idLomba', isEqualTo: riwayat.idLomba)
-            .where('status', isEqualTo: 'aktif')
-            .get();
+        // 1. Gunakan ID Dokumen deterministik untuk cek duplikasi pendaftaran
+        // Ini memastikan pengecekan duplikasi aman di dalam transaksi tanpa perlu Query.
+        String registrationId = "${riwayat.idUser}_${riwayat.idLomba}";
+        DocumentReference riwayatDoc = _riwayatCollection.doc(registrationId);
+        DocumentSnapshot riwayatSnap = await transaction.get(riwayatDoc);
 
-        if (check.docs.isNotEmpty) {
-          return {
-            'success': false,
-            'message': 'Anda sudah terdaftar di lomba ini.',
-          };
+        if (riwayatSnap.exists) {
+          Map<String, dynamic> existingData = riwayatSnap.data() as Map<String, dynamic>;
+          if (existingData['status'] == 'aktif') {
+            return {
+              'success': false,
+              'message': 'Anda sudah terdaftar di lomba ini.',
+            };
+          }
         }
 
         // 2. Cek kuota lomba
@@ -39,7 +41,18 @@ class RiwayatController {
           };
         }
 
-        int currentKuota = lombaSnap.get('kuota') as int;
+        Map<String, dynamic> lombaData = lombaSnap.data() as Map<String, dynamic>;
+        
+        // Penanganan tipe data kuota yang lebih aman (casting/parsing)
+        int currentKuota = 0;
+        if (lombaData['kuota'] != null) {
+          if (lombaData['kuota'] is int) {
+            currentKuota = lombaData['kuota'];
+          } else {
+            currentKuota = int.tryParse(lombaData['kuota'].toString()) ?? 0;
+          }
+        }
+
         if (currentKuota <= 0) {
           return {
             'success': false,
@@ -47,33 +60,32 @@ class RiwayatController {
           };
         }
 
-        // 3. Generate Token Unik (Bisa pakai Doc ID atau kombinasi)
-        DocumentReference riwayatDoc = _riwayatCollection.doc();
+        // 3. Generate Token Unik
         String token = "TKN-${riwayatDoc.id.substring(0, 8).toUpperCase()}";
+        String judulLomba = lombaData['judul'] ?? 'Lomba';
 
         // 4. Kurangi Kuota
         int newKuota = currentKuota - 1;
         transaction.update(lombaRef, {'kuota': newKuota});
 
-        // 5. Simpan ke Riwayat
+        // 5. Simpan ke Riwayat (menggunakan ID deterministik agar tidak duplikat)
         transaction.set(riwayatDoc, {
+          'id': registrationId,
           'idUser': riwayat.idUser,
           'idLomba': riwayat.idLomba,
           'tanggalDaftar': riwayat.tanggalDaftar ?? DateTime.now().toIso8601String(),
           'status': 'aktif',
           'token': token,
-          'judulLomba': lombaSnap.get('judul'),
+          'judulLomba': judulLomba,
         });
 
-        // 6. Jika kuota habis, pindahkan ke riwayatEvent (Selesai)
+        // 6. Jika kuota habis, pindahkan ke riwayatEvent (Selesai) sesuai permintaan
         if (newKuota <= 0) {
-          Map<String, dynamic> lombaData = lombaSnap.data() as Map<String, dynamic>;
           lombaData['idLombaAsli'] = lombaSnap.id;
           lombaData['statusLomba'] = 'Penuh/Selesai';
+          lombaData['kuota'] = 0; // Pastikan kuota tercatat 0
           
-          // Pindahkan ke riwayatEvent
           transaction.set(_riwayatEventCollection.doc(lombaSnap.id), lombaData);
-          // Hapus dari lomba aktif
           transaction.delete(lombaRef);
         }
 
@@ -82,9 +94,9 @@ class RiwayatController {
           'message': 'Pendaftaran berhasil!',
           'token': token,
           'data': {
-            'judul': lombaSnap.get('judul'),
-            'lokasi': lombaSnap.get('lokasi'),
-            'tanggal': lombaSnap.get('tanggal'),
+            'judul': judulLomba,
+            'lokasi': lombaData['lokasi'] ?? '-',
+            'tanggal': lombaData['tanggal'] ?? '-',
           }
         };
       });

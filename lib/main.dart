@@ -9,12 +9,13 @@ import 'package:match_discovery/view/splash.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
+  await PreferenceHandler.init(); // Inisialisasi preferensi
   await _initializeSuperAdmin();
   runApp(const MainApp());
 }
 
 Future<void> _initializeSuperAdmin() async {
-  bool initialized = await PreferenceHandler.getSuperAdminInitialized();
+  bool initialized = PreferenceHandler.getSuperAdminInitialized();
   if (!initialized) {
     // Check if super admin already exists in Firestore
     List<AdminModel> admins = await AdminController.getSemuaAdmin();
