@@ -318,6 +318,43 @@ await _db.collection('admins').doc(uid).set({
     return result != null;
   }
 
+  // ==================== RESET PASSWORD ====================
+
+  /// Mengirim email reset password ke pengguna.
+  static Future<String> forgotPassword(String email) async {
+    try {
+      // 1. Cek di koleksi users
+      final userQuery = await _db
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      // 2. Jika tidak ada di users, cek di koleksi admins
+      if (userQuery.docs.isEmpty) {
+        final adminQuery = await _db
+            .collection('admins')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+        
+        if (adminQuery.docs.isEmpty) {
+          return 'user-not-found';
+        }
+      }
+
+      // 3. Jika ditemukan di salah satu koleksi, kirim email reset
+      await _auth.sendPasswordResetEmail(email: email);
+      return 'success';
+    } on FirebaseAuthException catch (e) {
+      print("Error Firebase Auth Reset Password: ${e.code} - ${e.message}");
+      return e.code;
+    } catch (e) {
+      print("Error forgotPassword: $e");
+      return 'error';
+    }
+  }
+
   // ==================== DELETE ====================
 
   /// Menghapus akun dari Firebase Authentication.

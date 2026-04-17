@@ -9,6 +9,15 @@ class LombaController {
 
   // ==================== READ ====================
 
+  static Stream<List<LombaModel>> getLombaStream() {
+    return _lombaCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return LombaModel.fromMap(doc.data() as Map<String, dynamic>,
+            docId: doc.id);
+      }).toList();
+    });
+  }
+
   static Future<List<LombaModel>> getAllLomba() async {
     try {
       QuerySnapshot querySnapshot = await _lombaCollection.get();

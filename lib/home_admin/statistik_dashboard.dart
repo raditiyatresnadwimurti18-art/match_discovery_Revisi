@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
 import 'package:match_discovery/database/controllers/user.dart';
 import 'package:intl/intl.dart';
+import 'package:match_discovery/models/login_model.dart';
+import 'package:match_discovery/models/admin_model.dart';
+import 'package:match_discovery/models/lomba_model.dart';
 
 class StatistikDashboard extends StatefulWidget {
   const StatistikDashboard({super.key});
@@ -25,29 +29,59 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
 
   Map<String, double> _chartData = {};
 
+  List<LoginModel> _users = [];
+  List<AdminModel> _admins = [];
+  List<LombaModel> _lomba = [];
+
+  StreamSubscription? _userSub;
+  StreamSubscription? _adminSub;
+  StreamSubscription? _lombaSub;
+
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _initStreams();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final users = await UserController.getAllUser();
-      final admins = await AdminController.getSemuaAdmin();
-      final lomba = await LombaController.getAllLomba();
+  @override
+  void dispose() {
+    _userSub?.cancel();
+    _adminSub?.cancel();
+    _lombaSub?.cancel();
+    super.dispose();
+  }
 
+  void _initStreams() {
+    _userSub = UserController.getUsersStream().listen((data) {
+      _users = data;
+      _processData();
+    });
+
+    _adminSub = AdminController.getAdminsStream().listen((data) {
+      _admins = data;
+      _processData();
+    });
+
+    _lombaSub = LombaController.getLombaStream().listen((data) {
+      _lomba = data;
+      _processData();
+    });
+  }
+
+  void _processData() {
+    if (!mounted) return;
+
+    setState(() {
       // 1. Statistik Dasar
-      _totalUsers = users.length;
-      _totalAdmins = admins.length + 1; // +1 super admin
-      _totalLomba = lomba.length;
+      _totalUsers = _users.length;
+      _totalAdmins = _admins.length; // Already includes super admin from Firestore
+      _totalLomba = _lomba.length;
 
       // 2. Filter Lomba
       DateTime now = DateTime.now();
       _ongoingLomba = 0;
       _finishedLomba = 0;
-      for (var l in lomba) {
+      for (var l in _lomba) {
         try {
           DateTime tgl = DateTime.parse(l.tanggal);
           if (tgl.isAfter(now) ||
@@ -65,7 +99,7 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
 
       // 3. Logika "Pandas" di Dart (Grouping Data)
       _chartData = {};
-      for (var u in users) {
+      for (var u in _users) {
         String key = "";
         try {
           DateTime tgl = u.tanggal_daftar != null
@@ -83,11 +117,14 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
         } catch (_) {}
       }
 
-      setState(() => _isLoading = false);
-    } catch (e) {
-      debugPrint("Error loading statistik: $e");
-      setState(() => _isLoading = false);
-    }
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _refreshData() async {
+    // Streams will handle updates, but we can manually reload if needed
+    // or just show a small delay to simulate refresh
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override
@@ -97,8 +134,9 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: _refreshData,
               child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +187,7 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
             onChanged: (val) {
               if (val != null) {
                 setState(() => _selectedPeriod = val);
-                _loadData();
+                _processData();
               }
             },
           ),
@@ -256,8 +294,9 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         int index = value.toInt();
-                        if (index < 0 || index >= _chartData.keys.length)
+                        if (index < 0 || index >= _chartData.keys.length) {
                           return const SizedBox();
+                        }
                         return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(

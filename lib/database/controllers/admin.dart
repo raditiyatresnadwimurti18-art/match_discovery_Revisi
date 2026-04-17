@@ -52,13 +52,59 @@ class AdminController {
     }
   }
 
+  static Stream<List<AdminModel>> getAdminsStream() {
+    return _adminsCollection.snapshots().map((snapshot) {
+      List<AdminModel> admins = snapshot.docs
+          .map((doc) => AdminModel.fromMap(doc.data() as Map<String, dynamic>,
+              docId: doc.id))
+          .toList();
+
+      // Tambahkan Super Admin Lokal jika belum ada di list Firestore
+      bool superAdminExists =
+          admins.any((a) => a.username == '111' || a.id == 'super_admin_local');
+
+      if (!superAdminExists) {
+        admins.insert(
+            0,
+            AdminModel(
+              id: 'super_admin_local',
+              username: '111',
+              password: '222',
+              nama: 'Super Admin',
+              role: 'super',
+              profilePath: '',
+            ));
+      }
+      return admins;
+    });
+  }
+
   static Future<List<AdminModel>> getSemuaAdmin() async {
     try {
       QuerySnapshot querySnapshot = await _adminsCollection.get();
-      
-      return querySnapshot.docs
-          .map((doc) => AdminModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id))
+
+      List<AdminModel> admins = querySnapshot.docs
+          .map((doc) => AdminModel.fromMap(doc.data() as Map<String, dynamic>,
+              docId: doc.id))
           .toList();
+
+      // Tambahkan Super Admin Lokal jika belum ada
+      bool superAdminExists =
+          admins.any((a) => a.username == '111' || a.id == 'super_admin_local');
+
+      if (!superAdminExists) {
+        admins.insert(
+            0,
+            AdminModel(
+              id: 'super_admin_local',
+              username: '111',
+              password: '222',
+              nama: 'Super Admin',
+              role: 'super',
+              profilePath: '',
+            ));
+      }
+      return admins;
     } catch (e) {
       print("Error getSemuaAdmin: $e");
       return [];

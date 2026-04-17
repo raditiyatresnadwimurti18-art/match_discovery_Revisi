@@ -38,6 +38,95 @@ class _Login1State extends State<Login1> {
     context.pushAndRemoveAll(HomeUser());
   }
 
+  void _showForgotPasswordDialog() {
+    final resetEmailController = TextEditingController();
+    final dialogFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Lupa Password', style: kTitleStyle),
+          content: Form(
+            key: dialogFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Masukkan email Anda untuk menerima link reset password.',
+                  style: kSubtitleStyle,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: resetEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Email tidak boleh kosong';
+                    if (!v.contains('@')) return 'Email tidak valid';
+                    return null;
+                  },
+                  decoration: decorationConstant(
+                    hintText: 'Email',
+                    labelText: 'Email',
+                    prefixIcon: Icons.email_outlined,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(kBorderRadius - 4),
+                ),
+              ),
+              onPressed: () async {
+                if (!dialogFormKey.currentState!.validate()) return;
+
+                final result = await AuthController.forgotPassword(
+                  resetEmailController.text.trim(),
+                );
+
+                if (!mounted) return;
+                Navigator.pop(context);
+
+                if (result == 'success') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Email reset password telah dikirim! Silakan cek inbox Anda.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  String message = 'Terjadi kesalahan. Silakan coba lagi.';
+                  if (result == 'user-not-found') {
+                    message = 'Email anda belum terdaftar.';
+                  } else if (result == 'invalid-email') {
+                    message = 'Format email tidak valid.';
+                  }
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Kirim', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -201,7 +290,7 @@ class _Login1State extends State<Login1> {
                   width: double.infinity,
                   height: 50,
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: _showForgotPasswordDialog,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: kPrimaryColor),
                       foregroundColor: kPrimaryColor,

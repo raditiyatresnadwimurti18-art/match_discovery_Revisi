@@ -22,6 +22,18 @@ class UserController {
     }
   }
 
+  static Stream<List<LoginModel>> getUsersStream() {
+    return _usersCollection
+        .where('role', isEqualTo: 'user')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => LoginModel.fromMap(doc.data() as Map<String, dynamic>,
+              docId: doc.id))
+          .toList();
+    });
+  }
+
   static Future<List<LoginModel>> getAllUser() async {
     try {
       QuerySnapshot querySnapshot = await _usersCollection

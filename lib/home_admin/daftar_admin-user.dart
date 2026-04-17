@@ -66,8 +66,8 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
   }
 
   Widget _buildAdminList() {
-    return FutureBuilder<List<AdminModel>>(
-      future: _loadAdmin(),
+    return StreamBuilder<List<AdminModel>>(
+      stream: AdminController.getAdminsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -76,11 +76,12 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
           return const Center(child: Text("Tidak ada data admin."));
         }
 
+        final admins = snapshot.data!;
         return ListView.builder(
           padding: const EdgeInsets.all(10),
-          itemCount: snapshot.data!.length,
+          itemCount: admins.length,
           itemBuilder: (context, index) {
-            final admin = snapshot.data![index];
+            final admin = admins[index];
             return Card(
               elevation: 3,
               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -137,7 +138,7 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
               await UserController.deleteUser(user.id!);
               if (!mounted) return;
               Navigator.pop(context);
-              setState(() {});
+              // setState tidak perlu lagi karena pakai StreamBuilder
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("User berhasil dihapus")),
               );
@@ -151,8 +152,8 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
   }
 
   Widget _buildUserList() {
-    return FutureBuilder<List<LoginModel>>(
-      future: _loadUser(),
+    return StreamBuilder<List<LoginModel>>(
+      stream: UserController.getUsersStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -161,11 +162,12 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
           return const Center(child: Text("Tidak ada data user terdaftar."));
         }
 
+        final users = snapshot.data!;
         return ListView.builder(
           padding: const EdgeInsets.all(10),
-          itemCount: snapshot.data!.length,
+          itemCount: users.length,
           itemBuilder: (context, index) {
-            final user = snapshot.data![index];
+            final user = users[index];
             return Card(
               elevation: 3,
               margin: const EdgeInsets.symmetric(vertical: 8),
