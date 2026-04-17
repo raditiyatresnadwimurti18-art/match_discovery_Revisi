@@ -206,6 +206,15 @@ class RiwayatController {
 
   // ==================== TRACK RECORD ====================
 
+  static Stream<List<RiwayatSelesaiModel>> getRiwayatSelesaiStream() {
+    return _riwayatSelesaiCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return RiwayatSelesaiModel.fromMap(doc.data() as Map<String, dynamic>,
+            docId: doc.id);
+      }).toList();
+    });
+  }
+
   static Future<List<Map<String, dynamic>>> getTrackRecordUser(String userId) async {
     try {
       QuerySnapshot snap = await _riwayatSelesaiCollection

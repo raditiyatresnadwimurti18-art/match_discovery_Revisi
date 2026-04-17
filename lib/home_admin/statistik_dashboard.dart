@@ -4,10 +4,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
 import 'package:match_discovery/database/controllers/user.dart';
+import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:intl/intl.dart';
 import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/models/admin_model.dart';
 import 'package:match_discovery/models/lomba_model.dart';
+import 'package:match_discovery/models/riwayat_selesai_user.dart';
 
 class StatistikDashboard extends StatefulWidget {
   const StatistikDashboard({super.key});
@@ -32,10 +34,12 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   List<LoginModel> _users = [];
   List<AdminModel> _admins = [];
   List<LombaModel> _lomba = [];
+  List<RiwayatSelesaiModel> _riwayatSelesai = [];
 
   StreamSubscription? _userSub;
   StreamSubscription? _adminSub;
   StreamSubscription? _lombaSub;
+  StreamSubscription? _riwayatSelesaiSub;
 
   @override
   void initState() {
@@ -48,6 +52,7 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
     _userSub?.cancel();
     _adminSub?.cancel();
     _lombaSub?.cancel();
+    _riwayatSelesaiSub?.cancel();
     super.dispose();
   }
 
@@ -66,6 +71,11 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
       _lomba = data;
       _processData();
     });
+
+    _riwayatSelesaiSub = RiwayatController.getRiwayatSelesaiStream().listen((data) {
+      _riwayatSelesai = data;
+      _processData();
+    });
   }
 
   void _processData() {
@@ -74,38 +84,46 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
     setState(() {
       // 1. Statistik Dasar
       _totalUsers = _users.length;
-      _totalAdmins = _admins.length; // Already includes super admin from Firestore
+      _totalAdmins = _admins.length;
       _totalLomba = _lomba.length;
 
       // 2. Filter Lomba
       DateTime now = DateTime.now();
-      _ongoingLomba = 0;
-      _finishedLomba = 0;
-      for (var l in _lomba) {
-        try {
-          DateTime tgl = DateTime.parse(l.tanggal);
-          if (tgl.isAfter(now) ||
-              (tgl.day == now.day &&
-                  tgl.month == now.month &&
-                  tgl.year == now.year)) {
-            _ongoingLomba++;
-          } else {
-            _finishedLomba++;
-          }
-        } catch (_) {
-          _ongoingLomba++;
+      _ongoingLomba = _lomba.length; // Lomba yang ada di koleksi 'lomba' adalah yang aktif
+      _finishedLomba = _riwayatSelesai.length; // Berdasarkan konfirmasi selesai peserta
+
+      // 3. Logika Grouping Data untuk Chart (Trend Pendaftaran)
+      _chartData = {};
+      
+      if (_selectedPeriod == "Hari") {
+        // Tampilkan 7 hari terakhir
+        for (int i = 6; i >= 0; i--) {
+          DateTime d = now.subtract(Duration(days: i));
+          String key = DateFormat('dd/MM').format(d);
+          _chartData[key] = 0;
+        }
+      } else if (_selectedPeriod == "Bulan") {
+        // Tampilkan 6 bulan terakhir
+        for (int i = 5; i >= 0; i--) {
+          DateTime d = DateTime(now.year, now.month - i, 1);
+          String key = DateFormat('MMM').format(d);
+          _chartData[key] = 0;
+        }
+      } else {
+        // Tampilkan 3 tahun terakhir
+        for (int i = 2; i >= 0; i--) {
+          String key = (now.year - i).toString();
+          _chartData[key] = 0;
         }
       }
 
-      // 3. Logika "Pandas" di Dart (Grouping Data)
-      _chartData = {};
       for (var u in _users) {
-        String key = "";
         try {
           DateTime tgl = u.tanggal_daftar != null
               ? DateTime.parse(u.tanggal_daftar!)
               : now;
 
+          String key = "";
           if (_selectedPeriod == "Hari") {
             key = DateFormat('dd/MM').format(tgl);
           } else if (_selectedPeriod == "Bulan") {
@@ -113,7 +131,10 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
           } else {
             key = tgl.year.toString();
           }
-          _chartData[key] = (_chartData[key] ?? 0) + 1;
+
+          if (_chartData.containsKey(key)) {
+            _chartData[key] = (_chartData[key] ?? 0) + 1;
+          }
         } catch (_) {}
       }
 
@@ -122,8 +143,6 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   }
 
   Future<void> _refreshData() async {
-    // Streams will handle updates, but we can manually reload if needed
-    // or just show a small delay to simulate refresh
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -148,6 +167,7 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
                     _buildChartSection(),
                     const SizedBox(height: 24),
                     _buildLombaSection(),
+                    const SizedBox(height: 100), // Extra space at bottom
                   ],
                 ),
               ),
@@ -159,37 +179,42 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Statistik Sistem",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            const Text(
+              "Statistik Dashboard",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
             ),
             Text(
-              "Data analitik real-time",
-              style: TextStyle(color: Colors.grey),
+              "Update otomatis: ${DateFormat('HH:mm').format(DateTime.now())}",
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
           ],
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
           ),
-          child: DropdownButton<String>(
-            value: _selectedPeriod,
-            underline: const SizedBox(),
-            items: _periods
-                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                .toList(),
-            onChanged: (val) {
-              if (val != null) {
-                setState(() => _selectedPeriod = val);
-                _processData();
-              }
-            },
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedPeriod,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blue),
+              items: _periods
+                  .map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontWeight: FontWeight.w600))))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _selectedPeriod = val);
+                  _processData();
+                }
+              },
+            ),
           ),
         ),
       ],
@@ -199,20 +224,20 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   Widget _buildQuickStats() {
     return Row(
       children: [
-        _statBox("User", _totalUsers.toString(), Icons.people, Colors.blue),
+        _statBox("Total User", _totalUsers.toString(), Icons.people_alt_rounded, Colors.blue),
         const SizedBox(width: 12),
         _statBox(
           "Admin",
           _totalAdmins.toString(),
-          Icons.admin_panel_settings,
-          Colors.green,
+          Icons.shield_rounded,
+          Colors.orange,
         ),
         const SizedBox(width: 12),
         _statBox(
-          "Lomba",
+          "Lomba Aktif",
           _totalLomba.toString(),
-          Icons.emoji_events,
-          Colors.orange,
+          Icons.emoji_events_rounded,
+          Colors.green,
         ),
       ],
     );
@@ -221,25 +246,34 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   Widget _statBox(String title, String val, IconData icon, Color col) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
           ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: col, size: 24),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: col.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: col, size: 24),
+            ),
+            const SizedBox(height: 12),
             Text(
               val,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Color(0xFF263238)),
             ),
+            const SizedBox(height: 4),
             Text(
               title,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -248,41 +282,59 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   }
 
   Widget _buildChartSection() {
+    double maxData = _chartData.values.isEmpty ? 10 : _chartData.values.reduce((a, b) => a > b ? a : b);
+    if (maxData < 5) maxData = 5;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Pertumbuhan Pengguna ($_selectedPeriod)",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Tren Pertumbuhan User",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.blueGrey[900]),
+              ),
+              Icon(Icons.trending_up, color: Colors.green[400]),
+            ],
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 4),
+          Text(
+            "Data pendaftaran berdasarkan periode $_selectedPeriod",
+            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+          ),
+          const SizedBox(height: 40),
           SizedBox(
-            height: 250,
+            height: 220,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: (_chartData.values.isEmpty
-                    ? 10
-                    : _chartData.values.reduce((a, b) => a > b ? a : b) + 2),
+                maxY: maxData * 1.2,
                 barTouchData: BarTouchData(
+                  enabled: true,
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => Colors.blueAccent,
+                    getTooltipColor: (_) => const Color(0xFF1A237E),
+                    tooltipPadding: const EdgeInsets.all(8),
+                    tooltipRoundedRadius: 8,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem(
-                        "${rod.toY.round()} User",
-                        const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        "${rod.toY.round()}\n",
+                        const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        children: [
+                          const TextSpan(
+                            text: 'Pendaftar Baru',
+                            style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.normal),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -292,32 +344,47 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 30,
                       getTitlesWidget: (value, meta) {
                         int index = value.toInt();
                         if (index < 0 || index >= _chartData.keys.length) {
                           return const SizedBox();
                         }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 10,
                           child: Text(
                             _chartData.keys.elementAt(index),
-                            style: const TextStyle(fontSize: 10),
+                            style: TextStyle(color: Colors.grey[600], fontSize: 10, fontWeight: FontWeight.bold),
                           ),
                         );
                       },
                     ),
                   ),
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        if (value % 1 != 0) return const SizedBox();
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(color: Colors.grey[400], fontSize: 10),
+                        );
+                      },
+                    ),
                   ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey[100],
+                    strokeWidth: 1,
                   ),
                 ),
-                gridData: const FlGridData(show: false),
                 borderData: FlBorderData(show: false),
                 barGroups: _chartData.entries.toList().asMap().entries.map((e) {
                   return BarChartGroupData(
@@ -325,9 +392,18 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
                     barRods: [
                       BarChartRodData(
                         toY: e.value.value,
-                        color: Colors.blue,
-                        width: 18,
-                        borderRadius: BorderRadius.circular(4),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF448AFF), Color(0xFF2979FF)],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                        width: 16,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: maxData * 1.2,
+                          color: Colors.grey[50],
+                        ),
                       ),
                     ],
                   );
@@ -341,50 +417,56 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   }
 
   Widget _buildLombaSection() {
-    return Row(
-      children: [
-        _lombaCard("Lomba Berlangsung", _ongoingLomba.toString(), Colors.teal),
-        const SizedBox(width: 12),
-        _lombaCard(
-          "Lomba Selesai",
-          _finishedLomba.toString(),
-          Colors.redAccent,
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A237E),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Status Aktivitas Lomba",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _lombaStatusItem("Sedang Berlangsung", _ongoingLomba.toString(), Icons.play_circle_fill, Colors.blue[300]!),
+              Container(width: 1, height: 40, color: Colors.white24),
+              _lombaStatusItem("Konfirmasi Selesai", _finishedLomba.toString(), Icons.check_circle, Colors.green[400]!),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _lombaCard(String title, String val, Color col) {
+  Widget _lombaStatusItem(String title, String val, IconData icon, Color col) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: col.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: col.withOpacity(0.2)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: col,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: col, size: 28),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                val,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              val,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: col,
+              Text(
+                title,
+                style: const TextStyle(fontSize: 11, color: Colors.white70),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
