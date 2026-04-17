@@ -86,7 +86,7 @@ class NotificationService {
           if (data != null) {
             _showLocalNotification(
               title: '🏆 Lomba Baru Tersedia!',
-              body: 'Judul: ${data['judul'] ?? '-'} di ${data['lokasi'] ?? '-'}',
+              body: 'Lomba: ${data['judul'] ?? '-'} di ${data['lokasi'] ?? '-'}',
               payload: jsonEncode(data),
             );
           }

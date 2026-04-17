@@ -266,10 +266,18 @@ class RiwayatController {
     try {
       QuerySnapshot snap = await _riwayatSelesaiCollection
           .where('idUser', isEqualTo: userId)
-          .orderBy('tanggalSelesai', descending: true)
           .get();
 
-      return snap.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      List<Map<String, dynamic>> results = snap.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      
+      // Urutkan di memori berdasarkan tanggalSelesai descending
+      results.sort((a, b) {
+        String tglA = a['tanggalSelesai'] ?? '';
+        String tglB = b['tanggalSelesai'] ?? '';
+        return tglB.compareTo(tglA);
+      });
+
+      return results;
     } catch (e) {
       print("Error getTrackRecordPerLomba: $e");
       return [];

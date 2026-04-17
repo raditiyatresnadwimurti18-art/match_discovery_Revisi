@@ -418,12 +418,17 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
 
   Widget _buildLombaSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1A237E),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
       child: Column(
@@ -431,43 +436,83 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
         children: [
           const Text(
             "Status Aktivitas Lomba",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              _lombaStatusItem("Sedang Berlangsung", _ongoingLomba.toString(), Icons.play_circle_fill, Colors.blue[300]!),
-              Container(width: 1, height: 40, color: Colors.white24),
-              _lombaStatusItem("Konfirmasi Selesai", _finishedLomba.toString(), Icons.check_circle, Colors.green[400]!),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Jika lebar layar sangat sempit (misal < 300px), susun vertikal
+              bool isNarrow = constraints.maxWidth < 280;
+              
+              return isNarrow 
+                ? Column(
+                    children: [
+                      _lombaStatusItem("Sedang Berlangsung", _ongoingLomba.toString(), Icons.play_circle_fill, Colors.blue[300]!, isExpanded: false),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(color: Colors.white24, height: 1),
+                      ),
+                      _lombaStatusItem("Konfirmasi Selesai", _finishedLomba.toString(), Icons.check_circle, Colors.green[400]!, isExpanded: false),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      _lombaStatusItem("Sedang Berlangsung", _ongoingLomba.toString(), Icons.play_circle_fill, Colors.blue[300]!),
+                      Container(
+                        width: 1,
+                        height: 40,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        color: Colors.white24,
+                      ),
+                      _lombaStatusItem("Konfirmasi Selesai", _finishedLomba.toString(), Icons.check_circle, Colors.green[400]!),
+                    ],
+                  );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _lombaStatusItem(String title, String val, IconData icon, Color col) {
-    return Expanded(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: col, size: 28),
-          const SizedBox(width: 12),
-          Column(
+  Widget _lombaStatusItem(String title, String val, IconData icon, Color col, {bool isExpanded = true}) {
+    Widget content = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: col, size: 24),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 val,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               Text(
                 title,
-                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.white70,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    return isExpanded ? Expanded(child: content) : content;
   }
 }
