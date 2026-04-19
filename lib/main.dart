@@ -12,6 +12,7 @@ import 'package:match_discovery/view/splash.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.init(); // Pastikan plugin notifikasi lokal diinisialisasi
   print("Handling a background message: ${message.messageId}");
 }
 

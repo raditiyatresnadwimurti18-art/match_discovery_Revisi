@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:http/http.dart' as http;
-import '../config/env.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -127,38 +125,6 @@ class NotificationService {
       print('Subscribed to lomba topic');
     } catch (e) {
       print('Error subscribing to topic: $e');
-    }
-  }
-
-  static Future<void> sendLombaNotification(String judul, String lokasi) async {
-    const String serverKey = Env.fcmServerKey;
-    const String fcmUrl = 'https://fcm.googleapis.com/fcm/send';
-
-    final Map<String, dynamic> notificationData = {
-      'notification': {
-        'title': '🏆 Lomba Baru Tersedia!',
-        'body': 'Lomba: $judul di $lokasi. Ayo daftar!',
-        'sound': 'default',
-      },
-      'data': {
-        'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-        'type': 'new_lomba',
-      },
-      'to': '/topics/lomba',
-      'priority': 'high',
-    };
-
-    try {
-      final response = await http.post(Uri.parse(fcmUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'key=$serverKey',
-        },
-        body: jsonEncode(notificationData),
-      );
-      print('FCM Response: ${response.body}');
-    } catch (e) {
-      print('Error sending direct FCM: $e');
     }
   }
 }
