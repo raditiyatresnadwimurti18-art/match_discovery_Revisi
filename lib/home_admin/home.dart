@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/home_admin/widget_home/widget2.dart';
+import 'package:match_discovery/home_admin/widget_home/daftar_lomba.dart';
 import 'package:match_discovery/home_admin/data_user_lomba.dart';
 import 'package:match_discovery/home_admin/history_lomba.dart';
 import 'package:match_discovery/home_admin/profil_admin.dart';
