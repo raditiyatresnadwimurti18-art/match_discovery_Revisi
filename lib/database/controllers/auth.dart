@@ -33,6 +33,7 @@ class AuthController {
         'email': user.email,
         'tlpon': user.tlpon,
         'role': 'user',
+        'tanggal_daftar': DateTime.now().toIso8601String(),
       });
 
       return 'success';

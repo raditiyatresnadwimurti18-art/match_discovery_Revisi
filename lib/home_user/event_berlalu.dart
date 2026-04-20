@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/util/app_theme.dart';
 
@@ -13,6 +14,15 @@ class EventBerlalu extends StatefulWidget {
 
 class _EventBerlaluState extends State<EventBerlalu> {
   late Future<List<Map<String, dynamic>>> _eventFuture;
+
+  String _formatTanggal(String tanggal) {
+    try {
+      DateTime dateTime = DateTime.parse(tanggal);
+      return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(dateTime);
+    } catch (e) {
+      return tanggal;
+    }
+  }
 
   @override
   void initState() {
@@ -148,7 +158,7 @@ class _EventBerlaluState extends State<EventBerlalu> {
                     const SizedBox(height: 8),
                     _infoRow(Icons.location_on_outlined, event['lokasi']),
                     const SizedBox(height: 4),
-                    _infoRow(Icons.calendar_today_outlined, event['tanggal']),
+                    _infoRow(Icons.calendar_today_outlined, _formatTanggal(event['tanggal'] ?? '')),
                   ],
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/controllers/auth.dart';
 import 'package:match_discovery/database/notification_service.dart';
@@ -19,6 +20,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Inisialisasi format tanggal Indonesia
+  await initializeDateFormatting('id_ID', null);
   
   // Inisialisasi Notifikasi
   await NotificationService.init();

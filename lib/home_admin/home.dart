@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
+import 'package:match_discovery/home_admin/widget_home/widget2.dart';
 import 'package:match_discovery/home_admin/data_user_lomba.dart';
 import 'package:match_discovery/home_admin/history_lomba.dart';
-import 'package:match_discovery/home_admin/isihome.dart';
 import 'package:match_discovery/home_admin/profil_admin.dart';
 import 'package:match_discovery/home_admin/track_record_user.dart';
 import 'package:match_discovery/home_admin/statistik_dashboard.dart';
@@ -24,7 +24,7 @@ class _HomeState extends State<Home> {
   AdminModel? _admin;
 
   List<Widget> get _pages => [
-    const IsiHome(),
+    const Widget2(),
     const DataUserLomba(),
     const HistoryLomba(),
     const TrackRecordUser(),
@@ -68,6 +68,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: kBgColor,
       appBar: AppBar(
         leading: Builder(
           builder: (ctx) => IconButton(

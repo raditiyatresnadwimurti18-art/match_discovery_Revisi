@@ -308,6 +308,12 @@ class RiwayatController {
     }
   }
 
+  static Stream<List<Map<String, dynamic>>> getRiwayatStream() {
+    return _riwayatCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    });
+  }
+
   static Future<void> deleteAllRiwayatEvent() async {
     try {
       QuerySnapshot snap = await _riwayatEventCollection.get();

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/models/lomba_model.dart';
@@ -17,6 +18,15 @@ class DaftarLomba extends StatefulWidget {
 class _DaftarLombaState extends State<DaftarLomba> {
   List<LombaModel> _lombaList = [];
   bool _isLoading = true;
+
+  String _formatTanggal(String tanggal) {
+    try {
+      DateTime dateTime = DateTime.parse(tanggal);
+      return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(dateTime);
+    } catch (e) {
+      return tanggal;
+    }
+  }
 
   @override
   void initState() {
@@ -64,7 +74,7 @@ class _DaftarLombaState extends State<DaftarLomba> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _infoPopup(Icons.people_outline, "Kuota", "${lomba.kuota}"),
-              _infoPopup(Icons.calendar_today_outlined, "Tanggal", lomba.tanggal),
+              _infoPopup(Icons.calendar_today_outlined, "Tanggal", _formatTanggal(lomba.tanggal)),
               const SizedBox(height: 15),
               const Text(
                 "Klik detail untuk melihat informasi lengkap dan mendaftar.",

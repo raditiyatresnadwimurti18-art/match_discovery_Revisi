@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:match_discovery/models/lomba_model.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
@@ -11,6 +12,15 @@ class DetailLomba extends StatelessWidget {
   final LombaModel lomba;
 
   const DetailLomba({super.key, required this.lomba});
+
+  String _formatTanggal(String tanggal) {
+    try {
+      DateTime dateTime = DateTime.parse(tanggal);
+      return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(dateTime);
+    } catch (e) {
+      return tanggal;
+    }
+  }
 
   Future<void> _daftarLomba(BuildContext context) async {
     final userId = await PreferenceHandler.getUserId();
@@ -142,7 +152,7 @@ class DetailLomba extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   
-                  _infoItem(Icons.calendar_today, "Tanggal", lomba.tanggal),
+                  _infoItem(Icons.calendar_today, "Tanggal", _formatTanggal(lomba.tanggal)),
                   _infoItem(Icons.location_on, "Lokasi", lomba.lokasi),
                   
                   const Divider(height: 40),

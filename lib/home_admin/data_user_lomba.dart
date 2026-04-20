@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:match_discovery/database/controllers/laporan.dart';
 import 'package:match_discovery/util/app_theme.dart';
 import 'package:collection/collection.dart';
@@ -14,6 +15,15 @@ class _DataUserLombaState extends State<DataUserLomba> {
   Map<String, List<Map<String, dynamic>>> _groupedData = {};
   bool _isLoading = true;
   Map<String, bool> _expandedMap = {};
+
+  String _formatTanggal(String tanggal) {
+    try {
+      DateTime dateTime = DateTime.parse(tanggal);
+      return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(dateTime);
+    } catch (e) {
+      return tanggal;
+    }
+  }
 
   @override
   void initState() {
@@ -393,7 +403,7 @@ class _DataUserLombaState extends State<DataUserLomba> {
                                 ),
                               ),
                               Text(
-                                tanggal,
+                                _formatTanggal(user['tanggalDaftar'] ?? ''),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,

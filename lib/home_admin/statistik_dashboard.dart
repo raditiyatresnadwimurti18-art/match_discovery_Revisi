@@ -35,11 +35,13 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
   List<AdminModel> _admins = [];
   List<LombaModel> _lomba = [];
   List<RiwayatSelesaiModel> _riwayatSelesai = [];
+  List<Map<String, dynamic>> _riwayatRegistrasi = [];
 
   StreamSubscription? _userSub;
   StreamSubscription? _adminSub;
   StreamSubscription? _lombaSub;
   StreamSubscription? _riwayatSelesaiSub;
+  StreamSubscription? _riwayatRegistrasiSub;
 
   @override
   void initState() {
@@ -53,6 +55,7 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
     _adminSub?.cancel();
     _lombaSub?.cancel();
     _riwayatSelesaiSub?.cancel();
+    _riwayatRegistrasiSub?.cancel();
     super.dispose();
   }
 
@@ -74,6 +77,11 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
 
     _riwayatSelesaiSub = RiwayatController.getRiwayatSelesaiStream().listen((data) {
       _riwayatSelesai = data;
+      _processData();
+    });
+
+    _riwayatRegistrasiSub = RiwayatController.getRiwayatStream().listen((data) {
+      _riwayatRegistrasi = data;
       _processData();
     });
   }
@@ -117,11 +125,12 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
         }
       }
 
-      for (var u in _users) {
+      for (var r in _riwayatRegistrasi) {
         try {
-          DateTime tgl = u.tanggal_daftar != null
-              ? DateTime.parse(u.tanggal_daftar!)
-              : now;
+          String? tglStr = r['tanggalDaftar'];
+          if (tglStr == null) continue;
+
+          DateTime tgl = DateTime.parse(tglStr);
 
           String key = "";
           if (_selectedPeriod == "Hari") {
