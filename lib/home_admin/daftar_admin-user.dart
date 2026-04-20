@@ -17,16 +17,6 @@ class DaftarAdminPage extends StatefulWidget {
 class _DaftarAdminPageState extends State<DaftarAdminPage> {
   int _selectedIndex = 0;
 
-  // Fungsi untuk memuat ulang daftar admin
-  Future<List<AdminModel>> _loadAdmin() async {
-    return await AdminController.getSemuaAdmin();
-  }
-
-  // Fungsi untuk memuat ulang daftar user
-  Future<List<LoginModel>> _loadUser() async {
-    return await UserController.getAllUser();
-  }
-
   void _confirmDeleteAdmin(AdminModel admin) {
     if (admin.role == 'super') {
       ScaffoldMessenger.of(context).showSnackBar(

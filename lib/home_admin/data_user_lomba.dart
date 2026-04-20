@@ -92,10 +92,10 @@ class _DataUserLombaState extends State<DataUserLomba> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.groups, color: Colors.white, size: 28),
-                      SizedBox(width: 10),
+                      const Icon(Icons.groups, color: Colors.white, size: 28),
+                      const SizedBox(width: 10),
                       Text('Daftar Peserta Event', style: kWhiteBoldStyle),
                     ],
                   ),

@@ -5,6 +5,7 @@ import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/home.dart';
 import 'package:match_discovery/home_user/home_user.dart';
 import 'package:match_discovery/login/login.dart';
+import 'package:match_discovery/util/app_theme.dart';
 
 class SplashscreenT16 extends StatefulWidget {
   const SplashscreenT16({super.key});
@@ -42,77 +43,104 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ✅ Logo — zoom in dari kecil
-            ZoomIn(
-              duration: const Duration(milliseconds: 700),
-              child: Image.asset('assets/images/logo.png', height: 200),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ✅ Teks "Discovery" — slide dari kiri
-            FadeInLeft(
-              delay: const Duration(milliseconds: 500),
-              duration: const Duration(milliseconds: 600),
-              child: const Text(
-                'Discovery',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28,
-                  color: Color(0xffcdb060),
+      backgroundColor: kBgColor,
+      body: Stack(
+        children: [
+          // Latar belakang dekoratif
+          Positioned(
+            top: -100,
+            right: -100,
+            child: FadeInDown(
+              duration: const Duration(milliseconds: 1000),
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  color: kPrimaryColor.withValues(alpha: 0.03),
+                  shape: BoxShape.circle,
                 ),
               ),
             ),
-
-            // ✅ Teks "Match" — slide dari kanan
-            FadeInRight(
-              delay: const Duration(milliseconds: 600),
-              duration: const Duration(milliseconds: 600),
-              child: const Text(
-                'Match',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28,
-                  color: Color(0xff112955),
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ZoomIn(
+                  duration: const Duration(milliseconds: 800),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: kPrimaryColor.withValues(alpha: 0.1),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        )
+                      ],
+                    ),
+                    child: Image.asset('assets/images/logo.png', height: 120),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 400),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Match',
+                        style: kDisplayStyle.copyWith(fontSize: 32, color: kPrimaryColor),
+                      ),
+                      Text(
+                        'Discovery',
+                        style: kDisplayStyle.copyWith(fontSize: 32, color: kSecondaryColor),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 600),
+                  child: Text(
+                    'Temukan lomba, raih prestasi',
+                    style: kSubtitleStyle.copyWith(fontSize: 14, letterSpacing: 1),
+                  ),
+                ),
+                const SizedBox(height: 60),
+                FadeIn(
+                  delay: const Duration(milliseconds: 1000),
+                  child: const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      color: kPrimaryColor,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: FadeInUp(
+              delay: const Duration(milliseconds: 1200),
+              child: Center(
+                child: Text(
+                  'v1.2.0 • 2024',
+                  style: kSubtitleStyle.copyWith(fontSize: 10),
                 ),
               ),
             ),
-
-            const SizedBox(height: 8),
-
-            // ✅ Tagline — fade in dari bawah
-            FadeInUp(
-              delay: const Duration(milliseconds: 800),
-              duration: const Duration(milliseconds: 500),
-              child: const Text(
-                'Temukan lomba, raih prestasi',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 48),
-
-            // ✅ Loading indicator — fade in terakhir
-            FadeIn(
-              delay: const Duration(milliseconds: 1000),
-              duration: const Duration(milliseconds: 400),
-              child: const CircularProgressIndicator(
-                color: Color(0xff112955),
-                strokeWidth: 2.5,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+

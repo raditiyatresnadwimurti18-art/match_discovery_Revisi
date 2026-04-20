@@ -216,8 +216,8 @@ class _LoginState extends State<Login> {
                     // ✅ Tagline fade in
                     FadeIn(
                       delay: const Duration(milliseconds: 500),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
                         child: Text(
                           'Platform terpercaya untuk menemukan partner dan info kompetisi terbaik.',
                           style: kWhiteSubStyle,

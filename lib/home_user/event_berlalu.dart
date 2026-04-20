@@ -37,10 +37,6 @@ class _EventBerlaluState extends State<EventBerlalu> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: kPrimaryAppBar(
-        title: 'Event Telah Berakhir',
-        automaticallyImplyLeading: false,
-      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _eventFuture,
         builder: (context, snapshot) {

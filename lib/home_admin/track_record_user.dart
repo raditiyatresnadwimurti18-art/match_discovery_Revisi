@@ -90,14 +90,14 @@ class _TrackRecordUserState extends State<TrackRecordUser> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.workspace_premium,
                         color: Colors.white,
                         size: 28,
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Text('Track Record Peserta', style: kWhiteBoldStyle),
                     ],
                   ),

@@ -64,7 +64,6 @@ class _ProfilUserState extends State<ProfilUser> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && _user != null) {
-      // Tampilkan loading dialog
       if (!mounted) return;
       showDialog(
         context: context,
@@ -74,7 +73,7 @@ class _ProfilUserState extends State<ProfilUser> {
 
       Map<String, dynamic> result = await UserController.updateUserProfile(_user!.id!, image.path);
       
-      if (mounted) Navigator.pop(context); // Tutup loading
+      if (mounted) Navigator.pop(context);
 
       if (result['success'] == true) {
         await _fetchUserData();
@@ -91,7 +90,6 @@ class _ProfilUserState extends State<ProfilUser> {
           SnackBar(
             content: Text(result['message'] ?? 'Gagal memperbarui foto profil.'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -127,7 +125,6 @@ class _ProfilUserState extends State<ProfilUser> {
               TextField(controller: namaCtrl,
                   decoration: decorationConstant(hintText: 'Nama Lengkap', labelText: 'Nama', prefixIcon: Icons.person_outline)),
               const SizedBox(height: 12),
-              // ✅ FIX: Email dibuat ReadOnly
               TextField(
                 controller: emailCtrl,
                 readOnly: true,
@@ -217,104 +214,107 @@ class _ProfilUserState extends State<ProfilUser> {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // BUILD
-  // ──────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: AppBar(
-        backgroundColor: kPrimaryColor,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 0,
-        title: const Text('Profil Saya', style: kWhiteBoldStyle),
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: kPrimaryColor))
-          : _isGuest
-              ? _buildGuestView()
-              : _buildUserView(),
+          : CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                _buildSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: _isGuest ? _buildGuestView() : _buildUserView(),
+                ),
+              ],
+            ),
     );
   }
 
-  // ── Tampilan tamu ──────────────────────────────
-  Widget _buildGuestView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 280,
+      pinned: true,
+      stretch: true,
+      backgroundColor: kPrimaryColor,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+        onPressed: () => Navigator.pop(context),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [StretchMode.zoomBackground],
+        background: Stack(
+          alignment: Alignment.center,
           children: [
-            // ✅ Ikon — zoom in
-            ZoomIn(
-              duration: const Duration(milliseconds: 600),
-              child: Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: kPrimaryColor.withOpacity(0.07),
-                  shape: BoxShape.circle,
+            // Background Gradient
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [kPrimaryColor, kPrimaryLight],
                 ),
-                child: const Icon(Icons.person_off_outlined,
-                    size: 72, color: kPrimaryColor),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ✅ Teks — fade in dari bawah
-            FadeInUp(
-              delay: const Duration(milliseconds: 300),
-              child: const Text('Kamu Belum Login',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: kPrimaryColor)),
-            ),
-            const SizedBox(height: 8),
-            FadeInUp(
-              delay: const Duration(milliseconds: 400),
-              child: const Text(
-                'Login untuk mengakses profil, riwayat lomba, dan fitur lengkap lainnya.',
-                style: kSubtitleStyle,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // ✅ Tombol — bounce in
-            BounceInUp(
-              delay: const Duration(milliseconds: 500),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.pushAndRemoveAll(Login1()),
-                  style: kPrimaryButtonStyle(),
-                  icon: const Icon(Icons.login),
-                  label: const Text('Login Sekarang'),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-
-            FadeInUp(
-              delay: const Duration(milliseconds: 650),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  onPressed: () => context.pushAndRemoveAll(const Login()),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: kPrimaryColor),
-                    foregroundColor: kPrimaryColor,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(kBorderRadius - 2)),
+            // User Profile Info
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                Hero(
+                  tag: 'profile_pic',
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 120,
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: ClipOval(
+                          child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
+                              ? (_user!.profilePath!.startsWith('data:image')
+                                  ? Image.memory(base64Decode(_user!.profilePath!.split(',').last), fit: BoxFit.cover)
+                                  : Image.file(File(_user!.profilePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80, color: kPrimaryColor)))
+                              : const Icon(Icons.person, size: 80, color: kPrimaryColor),
+                        ),
+                      ),
+                      if (!_isGuest)
+                        Positioned(
+                          bottom: 0,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(color: kSecondaryColor, shape: BoxShape.circle),
+                              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  icon: const Icon(Icons.home_outlined),
-                  label: const Text('Kembali ke Beranda'),
                 ),
-              ),
+                const SizedBox(height: 16),
+                Text(
+                  _isGuest ? 'Halo, Tamu!' : (_user?.nama ?? 'User'),
+                  style: kWhiteBoldStyle.copyWith(fontSize: 22),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
+                  child: Text(
+                    _isGuest ? "Guest Access" : "Peserta Kompetisi",
+                    style: kWhiteSubStyle.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -322,40 +322,78 @@ class _ProfilUserState extends State<ProfilUser> {
     );
   }
 
-  // ── Tampilan user login ────────────────────────
-  Widget _buildUserView() {
-    return SingleChildScrollView(
+  Widget _buildGuestView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
       child: Column(
         children: [
-          // ✅ Header — slide dari atas
-          FadeInDown(
-            duration: const Duration(milliseconds: 600),
-            child: _buildHeader(),
-          ),
-          const SizedBox(height: 12),
-
-          // ✅ Info tiles — fade in dari kiri bertahap
-          FadeInLeft(delay: const Duration(milliseconds: 200),
-              child: _buildInfoTile(Icons.email_outlined, "Email", _user?.email)),
-          FadeInLeft(delay: const Duration(milliseconds: 300),
-              child: _buildInfoTile(Icons.phone_outlined, "Telepon", _user?.tlpon)),
-          FadeInLeft(delay: const Duration(milliseconds: 400),
-              child: _buildInfoTile(Icons.location_city_outlined, "Asal Kota", _user?.asalKota)),
-          FadeInLeft(delay: const Duration(milliseconds: 500),
-              child: _buildInfoTile(Icons.school_outlined, "Asal Sekolah", _user?.asalSekolah)),
-          FadeInLeft(delay: const Duration(milliseconds: 600),
-              child: _buildInfoTile(Icons.history_edu_outlined, "Pendidikan", _user?.pendidikanTerakhir)),
-
           const SizedBox(height: 20),
+          FadeInUp(
+            child: Text(
+              'Masuk untuk mengelola profil dan melihat riwayat kompetisi kamu.',
+              style: kSubtitleStyle.copyWith(fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 40),
+          BounceInUp(
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => context.pushAndRemoveAll(Login1()),
+                style: kPrimaryButtonStyle(radius: 20),
+                child: const Text('Login Sekarang'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // ✅ Tombol — bounce in dari bawah
+  Widget _buildUserView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Informasi Pribadi", style: kTitleStyle.copyWith(fontSize: 16)),
+          const SizedBox(height: 16),
+          FadeInLeft(delay: const Duration(milliseconds: 100), child: _buildInfoTile(Icons.alternate_email_rounded, "Email", _user?.email)),
+          FadeInLeft(delay: const Duration(milliseconds: 200), child: _buildInfoTile(Icons.phone_iphone_rounded, "Telepon", _user?.tlpon)),
+          FadeInLeft(delay: const Duration(milliseconds: 300), child: _buildInfoTile(Icons.location_on_rounded, "Asal Kota", _user?.asalKota)),
+          FadeInLeft(delay: const Duration(milliseconds: 400), child: _buildInfoTile(Icons.school_rounded, "Asal Sekolah", _user?.asalSekolah)),
+          FadeInLeft(delay: const Duration(milliseconds: 500), child: _buildInfoTile(Icons.history_edu_rounded, "Pendidikan", _user?.pendidikanTerakhir)),
+          
+          const SizedBox(height: 32),
+          
           BounceInUp(
             delay: const Duration(milliseconds: 600),
-            child: _buildEditButton(),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _showEditProfileDialog,
+                icon: const Icon(Icons.edit_rounded, size: 20),
+                label: const Text("Edit Profil"),
+                style: kPrimaryButtonStyle(radius: 18),
+              ),
+            ),
           ),
+          const SizedBox(height: 12),
           FadeInUp(
             delay: const Duration(milliseconds: 700),
-            child: _buildLogoutButton(),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showLogoutDialog,
+                icon: const Icon(Icons.logout_rounded, size: 20),
+                label: const Text("Keluar"),
+                style: kSecondaryButtonStyle(radius: 18).copyWith(
+                  foregroundColor: WidgetStateProperty.all(Colors.red),
+                  side: WidgetStateProperty.all(const BorderSide(color: Colors.red, width: 1.5)),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 40),
         ],
@@ -363,125 +401,34 @@ class _ProfilUserState extends State<ProfilUser> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildInfoTile(IconData icon, String title, String? value) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(bottom: 28),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [kPrimaryColor, kBgColor],
-        ),
-      ),
-      child: Column(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: kCardDecoration(radius: 18),
+      child: Row(
         children: [
-          const SizedBox(height: 28),
-          // ✅ Foto profil — zoom in
-          ZoomIn(
-            duration: const Duration(milliseconds: 500),
-            child: Stack(
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: kPrimaryColor.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: kPrimaryColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 120, height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: kAccentColor, width: 3.5),
-                  ),
-                  child: ClipOval(
-                    child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-                        ? (_user!.profilePath!.startsWith('data:image')
-                            ? Image.memory(
-                                base64Decode(_user!.profilePath!.split(',').last),
-                                fit: BoxFit.cover,
-                              )
-                            : _user!.profilePath!.startsWith('http')
-                                ? Image.network(
-                                    _user!.profilePath!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),
-                                  )
-                                : Image.file(
-                                    File(_user!.profilePath!),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60, color: kPrimaryColor),
-                                  ))
-                        : const Icon(Icons.person, size: 60, color: kPrimaryColor),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0, right: 0,
-                  child: GestureDetector(
-                    onTap: _pickImage,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                          color: kAccentColor, shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                    ),
-                  ),
+                Text(title, style: kSubtitleStyle.copyWith(fontSize: 11, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(
+                  (value == null || value.isEmpty) ? "-" : value,
+                  style: kBodyStyle.copyWith(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
-          // ✅ Nama — fade in
-          FadeIn(
-            delay: const Duration(milliseconds: 300),
-            child: Text(_user?.nama ?? 'Memuat...',
-                style: kTitleStyle.copyWith(fontSize: 20)),
-          ),
-          FadeIn(
-            delay: const Duration(milliseconds: 400),
-            child: const Text("Peserta Lomba", style: kSubtitleStyle),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildInfoTile(IconData icon, String title, String? value) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: kCardDecoration(),
-      child: ListTile(
-        leading: Icon(icon, color: kPrimaryColor),
-        title: Text(title, style: kSubtitleStyle.copyWith(fontSize: 12)),
-        subtitle: Text(
-          (value == null || value.isEmpty) ? "-" : value,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEditButton() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-    child: SizedBox(
-      width: double.infinity, height: 48,
-      child: ElevatedButton.icon(
-        onPressed: _showEditProfileDialog,
-        icon: const Icon(Icons.edit),
-        label: const Text("Edit Profil"),
-        style: kPrimaryButtonStyle(),
-      ),
-    ),
-  );
-
-  Widget _buildLogoutButton() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-    child: SizedBox(
-      width: double.infinity, height: 48,
-      child: OutlinedButton.icon(
-        onPressed: _showLogoutDialog,
-        icon: const Icon(Icons.logout),
-        label: const Text("Keluar"),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.red,
-          side: const BorderSide(color: Colors.red),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      ),
-    ),
-  );
 }

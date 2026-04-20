@@ -99,13 +99,13 @@ class _ReggisterState extends State<Reggister> {
               FadeInDown(
                 delay: const Duration(milliseconds: 300),
                 duration: const Duration(milliseconds: 500),
-                child: const Text('Buat Akun Baru', style: kTitleStyle),
+                child: Text('Buat Akun Baru', style: kTitleStyle),
               ),
               const SizedBox(height: 4),
               FadeInDown(
                 delay: const Duration(milliseconds: 400),
                 duration: const Duration(milliseconds: 500),
-                child: const Text('Daftarkan diri kamu sekarang!',
+                child: Text('Daftarkan diri kamu sekarang!',
                     style: kSubtitleStyle),
               ),
               const SizedBox(height: 24),

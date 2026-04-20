@@ -89,10 +89,6 @@ class _HistoryLombaState extends State<HistoryLomba> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: kPrimaryAppBar(
-        title: 'Event Telah Berakhir',
-        automaticallyImplyLeading: false,
-      ),
       body: _isLoading
           // ── Loading ───────────────────────────────────────────
           ? const Center(child: CircularProgressIndicator(color: kPrimaryColor))

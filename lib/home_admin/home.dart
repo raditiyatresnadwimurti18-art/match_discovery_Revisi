@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/home_admin/widget_home/daftar_lomba.dart';
@@ -22,6 +24,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _selectIndex = 0;
   AdminModel? _admin;
+  Uint8List? _profileBytes;
 
   List<Widget> get _pages => [
     const Widget2(),
@@ -48,13 +51,25 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _fetchAdminData() async {
-    // ✅ FIX: Gunakan getAdminId() bukan getId()
     final id = await PreferenceHandler.getAdminId();
     if (id == null) return;
     try {
       final data = await AdminController.getAdminById(id);
+      
+      Uint8List? bytes;
+      if (data?.profilePath != null && data!.profilePath!.startsWith('data:image')) {
+        try {
+          bytes = base64Decode(data.profilePath!.split(',').last);
+        } catch (e) {
+          debugPrint("Error decoding admin profile: $e");
+        }
+      }
+
       if (!mounted) return;
-      setState(() => _admin = data);
+      setState(() {
+        _admin = data;
+        _profileBytes = bytes;
+      });
     } catch (e) {
       debugPrint('Error fetchAdminData home: $e');
     }
@@ -69,229 +84,113 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: AppBar(
+      appBar: kModernAppBar(
+        title: _currentTitle,
         leading: Builder(
           builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
+            icon: const Icon(Icons.menu_rounded, color: Colors.white),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        backgroundColor: kPrimaryColor,
-        title: Text(_currentTitle, style: kWhiteBoldStyle),
-        centerTitle: true,
-        elevation: 0,
         actions: [
-          // Foto Profil
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ProfilAdmin()),
+                PageTransition(child: const ProfilAdmin()),
               ).then((_) => _fetchAdminData()),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: ClipOval(
-                  child: _admin?.role == 'super'
-                      ? Image.asset('assets/images/logo.png', fit: BoxFit.cover)
-                      : (_admin?.profilePath != null &&
-                                _admin!.profilePath!.isNotEmpty
-                            ? (_admin!.profilePath!.startsWith('data:image')
-                                  ? Image.memory(
-                                      base64Decode(
-                                        _admin!.profilePath!.split(',').last,
-                                      ),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : _admin!.profilePath!.startsWith('http')
-                                  ? Image.network(
-                                      _admin!.profilePath!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Image.file(
-                                      File(_admin!.profilePath!),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                      ),
-                                    ))
-                            : const Icon(Icons.person, color: Colors.white)),
+              child: Hero(
+                tag: 'admin_profile',
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: _admin?.role == 'super'
+                        ? Image.asset('assets/images/logo.png', fit: BoxFit.cover)
+                        : _profileBytes != null
+                            ? Image.memory(_profileBytes!, fit: BoxFit.cover)
+                            : (_admin?.profilePath != null && _admin!.profilePath!.isNotEmpty && !_admin!.profilePath!.startsWith('data:image'))
+                                ? (_admin!.profilePath!.startsWith('http')
+                                    ? Image.network(
+                                        _admin!.profilePath!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white),
+                                      )
+                                    : Image.file(
+                                        File(_admin!.profilePath!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white),
+                                      ))
+                                : const Icon(Icons.person, color: Colors.white),
+                  ),
                 ),
               ),
             ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.white24, height: 1),
-        ),
       ),
       drawer: Drawer(
+        backgroundColor: kSurfaceColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+        ),
         child: Column(
           children: [
-            UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [kPrimaryColor, Color(0xFF1A237E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              accountName: Text(
-                _admin?.nama ?? 'Admin',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              accountEmail: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _admin?.role == 'super'
-                      ? Colors.amber.withOpacity(0.2)
-                      : Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _admin?.role == 'super'
-                        ? Colors.amber
-                        : Colors.white70,
-                    width: 0.5,
-                  ),
-                ),
-                child: Text(
-                  _admin?.role == 'super' ? 'SUPER ADMIN' : 'ADMIN STAFF',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: _admin?.role == 'super'
-                        ? Colors.amber
-                        : Colors.white,
-                  ),
-                ),
-              ),
-              currentAccountPicture: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: _admin?.role == 'super'
-                      ? [
-                          BoxShadow(
-                            color: Colors.amber.withOpacity(0.5),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: ClipOval(
-                      child: _admin?.role == 'super'
-                          ? Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.cover,
-                              width: 90,
-                              height: 90,
-                            )
-                          : (_admin?.profilePath != null &&
-                                    _admin!.profilePath!.isNotEmpty
-                                ? (_admin!.profilePath!.startsWith('data:image')
-                                      ? Image.memory(
-                                          base64Decode(
-                                            _admin!.profilePath!
-                                                .split(',')
-                                                .last,
-                                          ),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : _admin!.profilePath!.startsWith('http')
-                                      ? Image.network(
-                                          _admin!.profilePath!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(
-                                                Icons.person,
-                                                size: 50,
-                                                color: kPrimaryColor,
-                                              ),
-                                        )
-                                      : Image.file(
-                                          File(_admin!.profilePath!),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(
-                                                Icons.person,
-                                                size: 50,
-                                                color: kPrimaryColor,
-                                              ),
-                                        ))
-                                : const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: kPrimaryColor,
-                                  )),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _buildModernAdminHeader(),
+            const SizedBox(height: 12),
             Expanded(
               child: ListView.builder(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: _menuItems.length,
                 itemBuilder: (context, index) {
                   final bool isSelected = _selectIndex == index;
                   return Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? kPrimaryColor.withOpacity(0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
+                      color: isSelected ? kPrimaryColor : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: kPrimaryColor.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ] : null,
                     ),
                     child: ListTile(
+                      onTap: () => _onMenuTap(index),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       leading: Icon(
                         _menuItems[index]['icon'] as IconData,
-                        color: isSelected ? kPrimaryColor : Colors.grey[600],
+                        color: isSelected ? Colors.white : kPrimaryColor,
                       ),
                       title: Text(
                         _menuItems[index]['label'] as String,
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected ? kPrimaryColor : Colors.grey[800],
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          color: isSelected ? Colors.white : Colors.black87,
                         ),
                       ),
                       trailing: isSelected
-                          ? Container(
-                              width: 4,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: kPrimaryColor,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            )
+                          ? const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white)
                           : null,
-                      onTap: () => _onMenuTap(index),
                     ),
                   );
                 },
@@ -301,7 +200,73 @@ class _HomeState extends State<Home> {
         ),
       ),
 
-      body: _pages.elementAt(_selectIndex),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: Container(
+          key: ValueKey<int>(_selectIndex),
+          child: _pages.elementAt(_selectIndex),
+        ),
+      ),
     );
   }
+
+  Widget _buildModernAdminHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+      decoration: const BoxDecoration(
+        gradient: kPrimaryGradient,
+        borderRadius: BorderRadius.only(bottomRight: Radius.circular(40)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            child: CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.white,
+              child: ClipOval(
+                child: _admin?.role == 'super'
+                    ? Image.asset('assets/images/logo.png', fit: BoxFit.cover, width: 80, height: 80)
+                    : _profileBytes != null
+                        ? Image.memory(_profileBytes!, fit: BoxFit.cover, width: 80, height: 80)
+                        : (_admin?.profilePath != null && _admin!.profilePath!.isNotEmpty && !_admin!.profilePath!.startsWith('data:image'))
+                            ? Image.file(
+                                File(_admin!.profilePath!),
+                                fit: BoxFit.cover,
+                                width: 80, height: 80,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 40, color: kPrimaryColor),
+                              )
+                            : const Icon(Icons.person, size: 40, color: kPrimaryColor),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _admin?.nama ?? 'Admin',
+            style: kWhiteBoldStyle.copyWith(fontSize: 20),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _admin?.role == 'super' ? Colors.amber : Colors.white24,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _admin?.role == 'super' ? 'SUPER ADMIN' : 'ADMIN STAFF',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: _admin?.role == 'super' ? kPrimaryColor : Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

@@ -46,13 +46,13 @@ class _Login1State extends State<Login1> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Lupa Password', style: kTitleStyle),
+          title: Text('Lupa Password', style: kTitleStyle),
           content: Form(
             key: dialogFormKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Masukkan email Anda untuk menerima link reset password.',
                   style: kSubtitleStyle,
                 ),
@@ -154,13 +154,13 @@ class _Login1State extends State<Login1> {
               FadeInDown(
                 delay: const Duration(milliseconds: 300),
                 duration: const Duration(milliseconds: 500),
-                child: const Text('Masuk ke Akun', style: kTitleStyle),
+                child: Text('Masuk ke Akun', style: kTitleStyle),
               ),
               const SizedBox(height: 4),
               FadeInDown(
                 delay: const Duration(milliseconds: 400),
                 duration: const Duration(milliseconds: 500),
-                child: const Text('Selamat datang kembali!',
+                child: Text('Selamat datang kembali!',
                     style: kSubtitleStyle),
               ),
               const SizedBox(height: 24),

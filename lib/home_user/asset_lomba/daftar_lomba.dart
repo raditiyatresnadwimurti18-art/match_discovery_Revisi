@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
@@ -124,22 +125,26 @@ class _DaftarLombaState extends State<DaftarLomba> {
     if (_isLoading) return const Center(child: CircularProgressIndicator(color: kPrimaryColor));
 
     if (_lombaList.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 16)],
+      return FadeIn(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: kPrimaryColor.withOpacity(0.05), blurRadius: 20)],
+                ),
+                child: const Icon(Icons.sentiment_dissatisfied_rounded, size: 60, color: kPrimaryColor),
               ),
-              child: const Icon(Icons.inbox_outlined, size: 48, color: kPrimaryColor),
-            ),
-            const SizedBox(height: 12),
-            const Text("Tidak ada data lomba", style: TextStyle(color: Colors.grey, fontSize: 15)),
-          ],
+              const SizedBox(height: 16),
+              Text("Belum ada kompetisi tersedia", style: kTitleStyle),
+              const SizedBox(height: 8),
+              Text("Coba cek lagi nanti ya!", style: kSubtitleStyle),
+            ],
+          ),
         ),
       );
     }
@@ -147,52 +152,94 @@ class _DaftarLombaState extends State<DaftarLomba> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
       itemCount: _lombaList.length,
       itemBuilder: (context, index) {
         final lomba = _lombaList[index];
-        return InkWell(
-          onTap: () => _showLombaDetailDialog(context, lomba),
-          child: Container(
-            decoration: kCardDecoration(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(kBorderRadius)),
-                    child: _buildItemImage(lomba.gambarPath),
+        return FadeInUp(
+          delay: Duration(milliseconds: index * 100),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DetailLomba(lomba: lomba)),
+              ).then((_) => _loadData());
+            },
+            child: Container(
+              decoration: kCardDecoration(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(kCardRadius)),
+                            child: Hero(
+                              tag: 'lomba_img_${lomba.id}',
+                              child: _buildItemImage(lomba.gambarPath),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.people_rounded, size: 12, color: Colors.white),
+                                const SizedBox(width: 4),
+                                Text("${lomba.kuota}", style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lomba.judul,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.people_outline, size: 13, color: kPrimaryColor),
-                          const SizedBox(width: 4),
-                          Text("Kuota: ${lomba.kuota ?? 0}", style: TextStyle(color: Colors.grey[700], fontSize: 11)),
-                        ],
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lomba.judul,
+                          style: kTitleStyle.copyWith(fontSize: 14),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, size: 12, color: kSecondaryColor),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                DateFormat('d MMM yyyy').format(DateTime.tryParse(lomba.tanggal) ?? DateTime.now()),
+                                style: kSubtitleStyle.copyWith(fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

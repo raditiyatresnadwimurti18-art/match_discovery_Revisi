@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:match_discovery/database/controllers/lomba.dart';
@@ -19,9 +19,6 @@ class Widget2 extends StatefulWidget {
 class _Widget2State extends State<Widget2> {
   List<LombaModel> _allLomba = [];
   String? _imagePath;
-  
-  // Cache sederhana untuk menyimpan byte gambar agar tidak didecode berulang kali
-  final Map<String, Uint8List> _decodedImages = {};
 
   final _judulCtrl = TextEditingController();
   final _lokasiCtrl = TextEditingController();
@@ -53,36 +50,13 @@ class _Widget2State extends State<Widget2> {
     _kuotaCtrl.dispose();
     _jenisCtrl.dispose();
     _tanggalCtrl.dispose();
-    _decodedImages.clear();
     super.dispose();
   }
 
   Future<void> _refreshLomba() async {
     final data = await LombaController.getAllLomba();
     if (!mounted) return;
-    
-    setState(() {
-      _allLomba = data;
-    });
-
-    // Proses decoding secara bertahap agar tidak membekukan UI
-    for (var lomba in data) {
-      if (lomba.id != null && lomba.gambarPath != null && lomba.gambarPath!.startsWith('data:image')) {
-        if (!_decodedImages.containsKey(lomba.id)) {
-          try {
-            final base64String = lomba.gambarPath!.split(',').last;
-            final bytes = base64Decode(base64String);
-            if (mounted) {
-              setState(() {
-                _decodedImages[lomba.id!] = bytes;
-              });
-            }
-          } catch (e) {
-            debugPrint("Gagal decode gambar ${lomba.id}: $e");
-          }
-        }
-      }
-    }
+    setState(() => _allLomba = data);
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -157,10 +131,7 @@ class _Widget2State extends State<Widget2> {
                   style: kTitleStyle.copyWith(fontSize: 18),
                 ),
                 const SizedBox(height: 12),
-                
-                // Preview Gambar di Form
                 _buildImagePreview(id, _imagePath),
-                
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
@@ -242,7 +213,6 @@ class _Widget2State extends State<Widget2> {
                       if (id == null) {
                         result = await LombaController.insertLomba(lomba);
                       } else {
-                        if (id != null) _decodedImages.remove(id);
                         result = await LombaController.updateLomba(lomba);
                       }
 
@@ -271,13 +241,11 @@ class _Widget2State extends State<Widget2> {
 
   void _deleteLomba(String id) async {
     await LombaController.deleteLomba(id);
-    _decodedImages.remove(id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil hapus'), backgroundColor: Colors.red));
     _refreshLomba();
   }
 
-  // Widget Helper untuk Gambar yang Lancar
   Widget _buildImage(String? id, String? path, {double? width, double? height, double radius = 8}) {
     if (path == null || path.isEmpty) {
       return Container(
@@ -287,24 +255,24 @@ class _Widget2State extends State<Widget2> {
       );
     }
 
-    // Tampilkan dari Cache jika Base64
-    if (id != null && _decodedImages.containsKey(id)) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: Image.memory(_decodedImages[id]!, width: width, height: height, fit: BoxFit.cover, gaplessPlayback: true),
-      );
-    }
-
-    // Proses Base64 (Loading State)
     if (path.startsWith('data:image')) {
-      return Container(
-        width: width, height: height,
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(radius)),
-        child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
-      );
+      try {
+        final base64String = path.split(',').last;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: Image.memory(
+            base64Decode(base64String),
+            width: width, height: height,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+          ),
+        );
+      } catch (e) {
+        return Container(width: width, height: height, color: Colors.grey.shade200, child: const Icon(Icons.broken_image));
+      }
     }
 
-    // File lokal atau lainnya
     try {
       return ClipRRect(
         borderRadius: BorderRadius.circular(radius),
@@ -347,74 +315,136 @@ class _Widget2State extends State<Widget2> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Daftar Kompetisi", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimaryColor)),
-              IconButton(onPressed: () => _showForm(null), icon: const Icon(Icons.add_circle, color: kPrimaryColor, size: 32)),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _allLomba.isEmpty
-              ? const Center(child: Text("Belum ada data lomba.", style: TextStyle(color: Colors.grey)))
-              : RefreshIndicator(
-                  onRefresh: _refreshLomba,
-                  color: kPrimaryColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                    itemCount: _allLomba.length,
-                    itemBuilder: (context, index) {
-                      final lomba = _allLomba[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: kCardDecoration(),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(kBorderRadius),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(12),
-                            leading: Hero(
-                              tag: 'lomba_${lomba.id}',
-                              child: _buildImage(lomba.id, lomba.gambarPath, width: 60, height: 60, radius: 10),
-                            ),
-                            title: Text(lomba.judul ?? '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(children: [const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey), const SizedBox(width: 4), Expanded(child: Text(lomba.lokasi ?? '-', style: kSubtitleStyle))]),
-                                  const SizedBox(height: 2),
-                                  Row(children: [const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey), const SizedBox(width: 4), Text(_formatTanggal(lomba.tanggal), style: kSubtitleStyle.copyWith(fontSize: 11))]),
-                                ],
-                              ),
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, color: Colors.grey),
-                              onSelected: (val) {
-                                if (val == 'edit') {
-                                  _showForm(lomba.id);
-                                } else if (val == 'delete') {
-                                  _confirmDelete(lomba);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, color: Colors.orange, size: 20), SizedBox(width: 8), Text('Edit')])),
-                                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red, size: 20), SizedBox(width: 8), Text('Hapus')])),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: kPrimaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.emoji_events_rounded, color: kPrimaryColor),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Manajemen Kompetisi", style: kTitleStyle),
+                      Text("Kelola semua daftar lomba aktif", style: kSubtitleStyle),
+                    ],
                   ),
                 ),
-        ),
-      ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: _allLomba.isEmpty
+                ? Center(
+                    child: FadeIn(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.layers_clear_rounded, size: 64, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text("Belum ada data lomba", style: kSubtitleStyle),
+                        ],
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _refreshLomba,
+                    color: kPrimaryColor,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                      itemCount: _allLomba.length,
+                      itemBuilder: (context, index) {
+                        final lomba = _allLomba[index];
+                        return FadeInRight(
+                          delay: Duration(milliseconds: index * 50),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: kCardDecoration(),
+                            child: InkWell(
+                              onTap: () => _showForm(lomba.id),
+                              borderRadius: BorderRadius.circular(kCardRadius),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Hero(
+                                      tag: 'lomba_${lomba.id}',
+                                      child: _buildImage(lomba.id, lomba.gambarPath, width: 80, height: 80, radius: 16),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            lomba.judul ?? '-',
+                                            style: kTitleStyle.copyWith(fontSize: 15),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.location_on_rounded, size: 14, color: kSecondaryColor),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(lomba.lokasi ?? '-', style: kSubtitleStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: kPrimaryColor.withValues(alpha: 0.05),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              _formatTanggal(lomba.tanggal),
+                                              style: kSubtitleStyle.copyWith(fontSize: 10, color: kPrimaryColor, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      children: [
+                                        IconButton(
+                                          onPressed: () => _confirmDelete(lomba),
+                                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                                        ),
+                                        const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showForm(null),
+        backgroundColor: kPrimaryColor,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: const Text("Tambah Lomba", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 }
