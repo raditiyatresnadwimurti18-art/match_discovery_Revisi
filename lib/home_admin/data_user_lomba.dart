@@ -388,7 +388,13 @@ class _DataUserLombaState extends State<DataUserLomba> {
                                 color: Colors.grey,
                               ),
                               const SizedBox(width: 4),
-                              Text(telepon, style: kSubtitleStyle),
+                              Expanded(
+                                child: Text(
+                                  telepon,
+                                  style: kSubtitleStyle,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           trailing: Column(
