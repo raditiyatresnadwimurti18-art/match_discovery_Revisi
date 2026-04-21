@@ -78,7 +78,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
                           color: kPrimaryColor.withValues(alpha: 0.1),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
-                        )
+                        ),
                       ],
                     ),
                     child: Image.asset('assets/images/logo.png', height: 120),
@@ -91,12 +91,18 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Match',
-                        style: kDisplayStyle.copyWith(fontSize: 32, color: kPrimaryColor),
+                        'Discovery',
+                        style: kDisplayStyle.copyWith(
+                          fontSize: 32,
+                          color: kPrimaryColor,
+                        ),
                       ),
                       Text(
-                        'Discovery',
-                        style: kDisplayStyle.copyWith(fontSize: 32, color: kSecondaryColor),
+                        'Match',
+                        style: kDisplayStyle.copyWith(
+                          fontSize: 32,
+                          color: kSecondaryColor,
+                        ),
                       ),
                     ],
                   ),
@@ -106,7 +112,10 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
                   delay: const Duration(milliseconds: 600),
                   child: Text(
                     'Temukan lomba, raih prestasi',
-                    style: kSubtitleStyle.copyWith(fontSize: 14, letterSpacing: 1),
+                    style: kSubtitleStyle.copyWith(
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 60),
@@ -143,4 +152,3 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
     );
   }
 }
-
