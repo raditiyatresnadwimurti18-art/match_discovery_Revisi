@@ -55,9 +55,10 @@ class _HomeState extends State<Home> {
     if (id == null) return;
     try {
       final data = await AdminController.getAdminById(id);
-      
+
       Uint8List? bytes;
-      if (data?.profilePath != null && data!.profilePath!.startsWith('data:image')) {
+      if (data?.profilePath != null &&
+          data!.profilePath!.startsWith('data:image')) {
         try {
           bytes = base64Decode(data.profilePath!.split(',').last);
         } catch (e) {
@@ -106,6 +107,7 @@ class _HomeState extends State<Home> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
@@ -118,22 +120,33 @@ class _HomeState extends State<Home> {
                   ),
                   child: ClipOval(
                     child: _admin?.role == 'super'
-                        ? Image.asset('assets/images/logo.png', fit: BoxFit.cover)
+                        ? Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
+                          )
                         : _profileBytes != null
-                            ? Image.memory(_profileBytes!, fit: BoxFit.cover)
-                            : (_admin?.profilePath != null && _admin!.profilePath!.isNotEmpty && !_admin!.profilePath!.startsWith('data:image'))
-                                ? (_admin!.profilePath!.startsWith('http')
-                                    ? Image.network(
-                                        _admin!.profilePath!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white),
-                                      )
-                                    : Image.file(
-                                        File(_admin!.profilePath!),
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white),
-                                      ))
-                                : const Icon(Icons.person, color: Colors.white),
+                        ? Image.memory(_profileBytes!, fit: BoxFit.cover)
+                        : (_admin?.profilePath != null &&
+                              _admin!.profilePath!.isNotEmpty &&
+                              !_admin!.profilePath!.startsWith('data:image'))
+                        ? (_admin!.profilePath!.startsWith('http')
+                              ? Image.network(
+                                  _admin!.profilePath!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Image.file(
+                                  File(_admin!.profilePath!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                  ),
+                                ))
+                        : const Icon(Icons.person, color: Colors.white),
                   ),
                 ),
               ),
@@ -164,13 +177,15 @@ class _HomeState extends State<Home> {
                     decoration: BoxDecoration(
                       color: isSelected ? kPrimaryColor : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: isSelected ? [
-                        BoxShadow(
-                          color: kPrimaryColor.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ] : null,
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: kPrimaryColor.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: ListTile(
                       onTap: () => _onMenuTap(index),
@@ -184,12 +199,18 @@ class _HomeState extends State<Home> {
                       title: Text(
                         _menuItems[index]['label'] as String,
                         style: GoogleFonts.plusJakartaSans(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           color: isSelected ? Colors.white : Colors.black87,
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white)
+                          ? const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            )
                           : null,
                     ),
                   );
@@ -223,23 +244,43 @@ class _HomeState extends State<Home> {
         children: [
           Container(
             padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
             child: CircleAvatar(
               radius: 40,
               backgroundColor: Colors.white,
               child: ClipOval(
                 child: _admin?.role == 'super'
-                    ? Image.asset('assets/images/logo.png', fit: BoxFit.cover, width: 80, height: 80)
+                    ? Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.cover,
+                        width: 80,
+                        height: 80,
+                      )
                     : _profileBytes != null
-                        ? Image.memory(_profileBytes!, fit: BoxFit.cover, width: 80, height: 80)
-                        : (_admin?.profilePath != null && _admin!.profilePath!.isNotEmpty && !_admin!.profilePath!.startsWith('data:image'))
-                            ? Image.file(
-                                File(_admin!.profilePath!),
-                                fit: BoxFit.cover,
-                                width: 80, height: 80,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 40, color: kPrimaryColor),
-                              )
-                            : const Icon(Icons.person, size: 40, color: kPrimaryColor),
+                    ? Image.memory(
+                        _profileBytes!,
+                        fit: BoxFit.cover,
+                        width: 80,
+                        height: 80,
+                      )
+                    : (_admin?.profilePath != null &&
+                          _admin!.profilePath!.isNotEmpty &&
+                          !_admin!.profilePath!.startsWith('data:image'))
+                    ? Image.file(
+                        File(_admin!.profilePath!),
+                        fit: BoxFit.cover,
+                        width: 80,
+                        height: 80,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: kPrimaryColor,
+                        ),
+                      )
+                    : const Icon(Icons.person, size: 40, color: kPrimaryColor),
               ),
             ),
           ),
@@ -268,5 +309,4 @@ class _HomeState extends State<Home> {
       ),
     );
   }
-
 }
