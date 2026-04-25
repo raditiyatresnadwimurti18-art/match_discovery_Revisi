@@ -42,39 +42,41 @@ class _LoginState extends State<Login> {
                 ),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: userAdmin,
-                  decoration: decorationConstant(
-                    hintText: 'Username Admin',
-                    labelText: 'Username',
-                    prefixIcon: Icons.alternate_email,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: passAdmin,
-                  obscureText: !isPasswordVisible,
-                  decoration: decorationConstant(
-                    hintText: 'Password',
-                    labelText: 'Password',
-                    prefixIcon: Icons.lock_outline,
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () => setStateDialog(
-                          () => isPasswordVisible = !isPasswordVisible),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: userAdmin,
+                    decoration: decorationConstant(
+                      hintText: 'Username Admin',
+                      labelText: 'Username',
+                      prefixIcon: Icons.alternate_email,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passAdmin,
+                    obscureText: !isPasswordVisible,
+                    decoration: decorationConstant(
+                      hintText: 'Password',
+                      labelText: 'Password',
+                      prefixIcon: Icons.lock_outline,
+                    ).copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () => setStateDialog(
+                            () => isPasswordVisible = !isPasswordVisible),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(

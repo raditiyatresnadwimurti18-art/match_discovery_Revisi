@@ -35,7 +35,7 @@ BoxDecoration kCardDecoration({double? radius}) => BoxDecoration(
   borderRadius: BorderRadius.circular(radius ?? kCardRadius),
   boxShadow: [
     BoxShadow(
-      color: kPrimaryColor.withValues(alpha: 0.06),
+      color: kPrimaryColor.withOpacity(0.06),
       blurRadius: 20,
       offset: const Offset(0, 8),
     ),
@@ -43,9 +43,9 @@ BoxDecoration kCardDecoration({double? radius}) => BoxDecoration(
 );
 
 BoxDecoration kGlassDecoration({double radius = 20}) => BoxDecoration(
-  color: Colors.white.withValues(alpha: 0.8),
+  color: Colors.white.withOpacity(0.8),
   borderRadius: BorderRadius.circular(radius),
-  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+  border: Border.all(color: Colors.white.withOpacity(0.2)),
 );
 
 const kHeaderDecoration = BoxDecoration(
@@ -57,7 +57,7 @@ const kHeaderDecoration = BoxDecoration(
 );
 
 BoxDecoration kBadgeDecoration([Color color = kPrimaryColor]) => BoxDecoration(
-  color: color.withValues(alpha: 0.1),
+  color: color.withOpacity(0.1),
   borderRadius: BorderRadius.circular(8),
 );
 
@@ -102,7 +102,7 @@ ButtonStyle kPrimaryButtonStyle({double radius = 16}) =>
       foregroundColor: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       elevation: 2,
-      shadowColor: kPrimaryColor.withValues(alpha: 0.3),
+      shadowColor: kPrimaryColor.withOpacity(0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
       ),

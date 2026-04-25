@@ -188,19 +188,24 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Statistik Dashboard",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
-            ),
-            Text(
-              "Update otomatis: ${DateFormat('HH:mm').format(DateTime.now())}",
-              style: TextStyle(color: Colors.grey[600], fontSize: 13),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Statistik Dashboard",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                "Update otomatis: ${DateFormat('HH:mm').format(DateTime.now())}",
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
@@ -283,6 +288,8 @@ class _StatistikDashboardState extends State<StatistikDashboard> {
               title,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

@@ -5,6 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:match_discovery/models/lomba_model.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
+import 'package:match_discovery/database/controllers/kelompok.dart';
+import 'package:match_discovery/home_user/cari_kelompok.dart';
+import 'package:match_discovery/home_user/detail_kelompok.dart';
+import 'package:match_discovery/models/kelompok_model.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/models/riwayat_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
@@ -23,7 +27,7 @@ class DetailLomba extends StatelessWidget {
     }
   }
 
-  Future<void> _daftarLomba(BuildContext context) async {
+  Future<void> _daftarLomba(BuildContext context, {String? idKelompok}) async {
     final userId = await PreferenceHandler.getUserId();
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,6 +46,7 @@ class DetailLomba extends StatelessWidget {
       idUser: userId,
       idLomba: lomba.id!,
       tanggalDaftar: DateTime.now().toIso8601String(),
+      idKelompok: idKelompok,
     );
 
     final result = await RiwayatController.ikutiLomba(riwayat);
@@ -73,23 +78,25 @@ class DetailLomba extends StatelessWidget {
             Text("Berhasil Daftar!", style: kTitleStyle.copyWith(fontSize: 22)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Anda telah terdaftar di\n$judul", textAlign: TextAlign.center, style: kBodyStyle),
-            const SizedBox(height: 24),
-            Text("TOKEN PENDAFTARAN", style: kSubtitleStyle.copyWith(letterSpacing: 2, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: kPrimaryColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: kPrimaryColor.withOpacity(0.1)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Anda telah terdaftar di\n$judul", textAlign: TextAlign.center, style: kBodyStyle),
+              const SizedBox(height: 24),
+              Text("TOKEN PENDAFTARAN", style: kSubtitleStyle.copyWith(letterSpacing: 2, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: kPrimaryColor.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kPrimaryColor.withOpacity(0.1)),
+                ),
+                child: Text(token, style: kDisplayStyle.copyWith(fontSize: 28, letterSpacing: 4, color: kPrimaryColor)),
               ),
-              child: Text(token, style: kDisplayStyle.copyWith(fontSize: 28, letterSpacing: 4, color: kPrimaryColor)),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           Center(
@@ -173,9 +180,16 @@ class DetailLomba extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.group_rounded, size: 16, color: kPrimaryColor),
+                                Icon(
+                                  lomba.jenisLomba == 'Kelompok' ? Icons.groups_rounded : Icons.person_rounded, 
+                                  size: 16, 
+                                  color: kPrimaryColor
+                                ),
                                 const SizedBox(width: 6),
-                                Text("${lomba.kuota} Peserta", style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold, fontSize: 11)),
+                                Text(
+                                  "${lomba.kuota} ${lomba.jenisLomba == 'Kelompok' ? 'Kelompok' : 'Peserta'}", 
+                                  style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold, fontSize: 11)
+                                ),
                               ],
                             ),
                           ),
@@ -199,6 +213,14 @@ class DetailLomba extends StatelessWidget {
                     FadeInUp(
                       delay: const Duration(milliseconds: 300),
                       child: _infoItem(Icons.location_on_rounded, "Lokasi Kompetisi", lomba.lokasi),
+                    ),
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 350),
+                      child: _infoItem(
+                        Icons.group_outlined, 
+                        "Jenis Kompetisi", 
+                        "${lomba.jenisLomba}${lomba.jenisLomba == 'Kelompok' ? " (${lomba.jumlahAnggota} Anggota/Tim)" : ""}"
+                      ),
                     ),
                     
                     const SizedBox(height: 32),
@@ -247,19 +269,108 @@ class DetailLomba extends StatelessWidget {
             ),
           ],
         ),
-        child: FadeInUp(
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              style: kPrimaryButtonStyle(radius: 18),
-              onPressed: () => _daftarLomba(context),
-              child: const Text(
-                "Daftar Sekarang",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-              ),
-            ),
-          ),
+        child: FutureBuilder<String?>(
+          future: Future.value(PreferenceHandler.getUserId()),
+          builder: (context, userSnap) {
+            if (!userSnap.hasData || userSnap.data == null) {
+              return SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  style: kPrimaryButtonStyle(radius: 18),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Silakan login terlebih dahulu untuk mendaftar.")),
+                    );
+                  },
+                  child: const Text("Daftar Sekarang"),
+                ),
+              );
+            }
+            final uid = userSnap.data!;
+            
+            return FutureBuilder<bool>(
+              future: RiwayatController.isUserSedangIkutLomba(uid, lomba.id!),
+              builder: (context, registeredSnap) {
+                final isRegistered = registeredSnap.data ?? false;
+
+                return FutureBuilder<KelompokModel?>(
+                  future: KelompokController.getMyKelompok(lomba.id!, uid),
+                  builder: (context, kelSnap) {
+                    final myKel = kelSnap.data;
+                    bool isKelompok = lomba.jenisLomba == 'Kelompok';
+                    
+                    String btnText = "Daftar Sekarang";
+                    Color btnColor = kPrimaryColor;
+                    VoidCallback? onPressed;
+
+                    if (isRegistered) {
+                      btnText = "Sudah Terdaftar";
+                      btnColor = Colors.green;
+                      onPressed = () {
+                        if (isKelompok && myKel != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => DetailKelompokPage(idKelompok: myKel.id!, lomba: lomba))
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Anda sudah terdaftar di kompetisi ini."), backgroundColor: Colors.green),
+                          );
+                        }
+                      };
+                    } else if (isKelompok) {
+                      if (myKel == null) {
+                        btnText = "Cari Kelompok";
+                        onPressed = () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => CariKelompokPage(lomba: lomba))
+                          );
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => DetailLomba(lomba: lomba))
+                          );
+                        };
+                      } else {
+                        btnText = "Menunggu Anggota (${myKel.anggotaIds.length}/${myKel.maxAnggota})";
+                        btnColor = Colors.orange;
+                        onPressed = () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => DetailKelompokPage(idKelompok: myKel.id!, lomba: lomba))
+                          );
+                        };
+                      }
+                    } else {
+                      // Individual
+                      onPressed = () => _daftarLomba(context);
+                    }
+
+                    return FadeInUp(
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: btnColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            elevation: 0,
+                          ),
+                          onPressed: onPressed,
+                          child: Text(
+                            btnText,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                );
+              }
+            );
+          }
         ),
       ),
     );

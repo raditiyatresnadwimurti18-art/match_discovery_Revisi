@@ -389,8 +389,8 @@ class _ProfilUserState extends State<ProfilUser> {
                 icon: const Icon(Icons.logout_rounded, size: 20),
                 label: const Text("Keluar"),
                 style: kSecondaryButtonStyle(radius: 18).copyWith(
-                  foregroundColor: WidgetStateProperty.all(Colors.red),
-                  side: WidgetStateProperty.all(const BorderSide(color: Colors.red, width: 1.5)),
+                  foregroundColor: MaterialStateProperty.all(Colors.red),
+                  side: MaterialStateProperty.all(const BorderSide(color: Colors.red, width: 1.5)),
                 ),
               ),
             ),
@@ -410,7 +410,7 @@ class _ProfilUserState extends State<ProfilUser> {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: kPrimaryColor.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: kPrimaryColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: kPrimaryColor, size: 22),
           ),
           const SizedBox(width: 16),

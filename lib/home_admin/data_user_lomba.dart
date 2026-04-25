@@ -48,29 +48,18 @@ class _DataUserLombaState extends State<DataUserLomba> {
     });
   }
 
-  /// ✅ Deduplikasi: gabungkan user yang sama, hitung frekuensinya,
-  /// simpan tanggal daftar terbaru.
+  /// ✅ Deduplikasi berdasarkan idUser agar user yang sama tidak muncul berkali-kali di lomba yang sama,
+  /// namun tetap menampilkan seluruh anggota kelompok yang berbeda.
   List<Map<String, dynamic>> _deduplikasi(
     List<Map<String, dynamic>> pendaftar,
   ) {
     final Map<String, Map<String, dynamic>> unique = {};
 
     for (final user in pendaftar) {
-      final nama = (user['nama_user'] as String?) ?? '-';
+      final idUser = (user['idUser'] as String?) ?? (user['nama_user'] as String?) ?? '-';
 
-      if (unique.containsKey(nama)) {
-        // Tambah hitungan
-        unique[nama]!['_kali_daftar'] =
-            (unique[nama]!['_kali_daftar'] as int) + 1;
-
-        // Simpan tanggal yang paling baru
-        final existing = unique[nama]!['tanggalDaftar'] as String? ?? '';
-        final incoming = (user['tanggalDaftar'] as String?) ?? '';
-        if (incoming.compareTo(existing) > 0) {
-          unique[nama]!['tanggalDaftar'] = incoming;
-        }
-      } else {
-        unique[nama] = Map<String, dynamic>.from(user)..['_kali_daftar'] = 1;
+      if (!unique.containsKey(idUser)) {
+        unique[idUser] = Map<String, dynamic>.from(user);
       }
     }
 
@@ -186,13 +175,8 @@ class _DataUserLombaState extends State<DataUserLomba> {
     required bool isExpanded,
     required int nomor,
   }) {
-    // ✅ Gunakan list yang sudah dideduplikasi
+    // ✅ Gunakan list yang sudah dideduplikasi berdasarkan idUser
     final uniquePendaftar = _deduplikasi(pendaftar);
-
-    // Hitung user yang daftar lebih dari 1x (untuk peringatan di header)
-    final jumlahDuplikat = uniquePendaftar
-        .where((u) => (u['_kali_daftar'] as int) > 1)
-        .length;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -234,29 +218,6 @@ class _DataUserLombaState extends State<DataUserLomba> {
                               letterSpacing: 0.5,
                             ),
                           ),
-                          // Peringatan jika ada user daftar > 1x
-                          if (jumlahDuplikat > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.warning_amber_rounded,
-                                    size: 11,
-                                    color: Colors.amber,
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    '$jumlahDuplikat user daftar lebih dari 1x',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.amber,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                         ],
                       ),
                     ),
@@ -311,7 +272,8 @@ class _DataUserLombaState extends State<DataUserLomba> {
                         (user['tanggalDaftar'] as String?)?.split(' ').first ??
                         '-';
                     final isLast = i == uniquePendaftar.length - 1;
-                    final kaliDaftar = user['_kali_daftar'] as int;
+                    final jenis = user['jenis'] ?? 'Individual';
+                    final statusTim = user['status_tim'] ?? 'Terdaftar';
 
                     return Column(
                       children: [
@@ -341,82 +303,94 @@ class _DataUserLombaState extends State<DataUserLomba> {
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                   ),
-                                ),
-                              ),
-                              // ✅ Badge "Daftar Nx" hanya jika > 1x
-                              if (kaliDaftar > 1)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 6),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.shade100,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.orange.shade300,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.repeat,
-                                        size: 10,
-                                        color: Colors.orange.shade700,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        'Daftar ${kaliDaftar}x',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.orange.shade700,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                          subtitle: Row(
-                            children: [
-                              const Icon(
-                                Icons.phone_outlined,
-                                size: 12,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  telepon,
-                                  style: kSubtitleStyle,
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 4),
+                              // Badge Jenis
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (jenis == 'Kelompok' ? Colors.amber : Colors.blue).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  jenis.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: jenis == 'Kelompok' ? Colors.amber.shade900 : Colors.blue.shade900,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Terdaftar',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.phone_outlined,
+                                    size: 12,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      telepon,
+                                      style: kSubtitleStyle,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                _formatTanggal(user['tanggalDaftar'] ?? ''),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: kPrimaryColor,
+                              if (jenis == 'Kelompok')
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    "Status: $statusTim",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontStyle: FontStyle.italic,
+                                      color: statusTim == 'Terdaftar' ? Colors.green : Colors.orange.shade800,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
                             ],
+                          ),
+                          trailing: SizedBox(
+                            width: 80,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  statusTim == 'Terdaftar' ? 'Terdaftar' : 'Pending',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: statusTim == 'Terdaftar' ? Colors.grey : Colors.orange,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  _formatTanggal(user['tanggalDaftar'] ?? ''),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: kPrimaryColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         if (!isLast)

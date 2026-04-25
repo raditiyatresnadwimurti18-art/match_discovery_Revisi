@@ -17,7 +17,7 @@ InputDecoration decorationConstant({
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: kPrimaryColor.withValues(alpha: 0.05),
+              color: kPrimaryColor.withOpacity(0.05),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(prefixIcon, color: kPrimaryColor, size: 18),

@@ -71,18 +71,20 @@ class _DaftarLombaState extends State<DaftarLomba> {
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _infoPopup(Icons.people_outline, "Kuota", "${lomba.kuota}"),
-              _infoPopup(Icons.calendar_today_outlined, "Tanggal", _formatTanggal(lomba.tanggal)),
-              const SizedBox(height: 15),
-              const Text(
-                "Klik detail untuk melihat informasi lengkap dan mendaftar.",
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
-                textAlign: TextAlign.center,
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _infoPopup(Icons.people_outline, "Kuota", "${lomba.kuota}"),
+                _infoPopup(Icons.calendar_today_outlined, "Tanggal", _formatTanggal(lomba.tanggal)),
+                const SizedBox(height: 15),
+                const Text(
+                  "Klik detail untuk melihat informasi lengkap dan mendaftar.",
+                  style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

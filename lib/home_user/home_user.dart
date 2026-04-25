@@ -11,6 +11,7 @@ import 'package:match_discovery/home_user/profil.dart';
 import 'package:match_discovery/home_user/event_berlalu.dart';
 import 'package:match_discovery/home_user/history_user.dart';
 import 'package:match_discovery/home_user/isi_home_user.dart';
+import 'package:match_discovery/home_user/daftar_kelompok_saya.dart';
 import 'package:match_discovery/login/login1.dart';
 import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
@@ -33,6 +34,7 @@ class _HomeUserState extends State<HomeUser> {
     {'label': 'Home',          'icon': Icons.home_rounded,    'guestAllowed': true },
     {'label': 'History',       'icon': Icons.history_rounded, 'guestAllowed': false},
     {'label': 'Event Terlewat','icon': Icons.event_rounded,   'guestAllowed': false},
+    {'label': 'Kelompok Saya', 'icon': Icons.groups_rounded,  'guestAllowed': false, 'isNewPage': true},
   ];
 
   int _selectIndex = 0;
@@ -92,10 +94,19 @@ class _HomeUserState extends State<HomeUser> {
 
   void _onMenuTap(int index) {
     final bool guestAllowed = _menuItems[index]['guestAllowed'] as bool;
+    final bool isNewPage    = _menuItems[index]['isNewPage'] ?? false;
 
     if (_isGuest && !guestAllowed) {
       Navigator.pop(context);
       _showLoginRequiredDialog();
+      return;
+    }
+
+    if (isNewPage) {
+      Navigator.pop(context);
+      if (_menuItems[index]['label'] == 'Kelompok Saya') {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const DaftarKelompokSayaPage()));
+      }
       return;
     }
 
@@ -183,7 +194,7 @@ class _HomeUserState extends State<HomeUser> {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -290,7 +301,7 @@ class _HomeUserState extends State<HomeUser> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: isSelected ? [
                           BoxShadow(
-                            color: kPrimaryColor.withValues(alpha: 0.3),
+                            color: kPrimaryColor.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           )

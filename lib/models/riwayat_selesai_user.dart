@@ -3,21 +3,27 @@ class RiwayatSelesaiModel {
   final String idUser;
   final String judulLomba;
   final String tanggalSelesai;
+  final String jenisLomba; // 'Individual' atau 'Kelompok'
+  final String? idKelompok;
 
   RiwayatSelesaiModel({
     this.id,
     required this.idUser,
     required this.judulLomba,
     required this.tanggalSelesai,
+    this.jenisLomba = 'Individual',
+    this.idKelompok,
   });
 
   // Konversi dari Map (dari database) ke Model
   factory RiwayatSelesaiModel.fromMap(Map<String, dynamic> map, {String? docId}) {
     return RiwayatSelesaiModel(
       id: docId ?? (map['id'] as String?),
-      idUser: map['idUser'] as String,
-      judulLomba: map['judulLomba'] as String,
-      tanggalSelesai: map['tanggalSelesai'] as String,
+      idUser: map['idUser'] ?? '',
+      judulLomba: map['judulLomba'] ?? '',
+      tanggalSelesai: map['tanggalSelesai'] ?? '',
+      jenisLomba: map['jenisLomba'] ?? 'Individual',
+      idKelompok: map['idKelompok'],
     );
   }
 
@@ -28,16 +34,8 @@ class RiwayatSelesaiModel {
       'idUser': idUser,
       'judulLomba': judulLomba,
       'tanggalSelesai': tanggalSelesai,
+      'jenisLomba': jenisLomba,
+      'idKelompok': idKelompok,
     };
-  }
-
-  // Untuk debugging
-  @override
-  String toString() {
-    return 'RiwayatSelesaiModel('
-        'id: $id, '
-        'idUser: $idUser, '
-        'judulLomba: $judulLomba, '
-        'tanggalSelesai: $tanggalSelesai)';
   }
 }

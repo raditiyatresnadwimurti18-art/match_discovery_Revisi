@@ -6,12 +6,14 @@ class RiwayatModel {
   String idUser;
   String idLomba;
   String? tanggalDaftar;
+  String? idKelompok;
 
   RiwayatModel({
     this.id,
     required this.idUser,
     required this.idLomba,
     this.tanggalDaftar,
+    this.idKelompok,
   });
 
   // Untuk menyimpan ke Database
@@ -21,6 +23,7 @@ class RiwayatModel {
       'idUser': idUser,
       'idLomba': idLomba,
       'tanggalDaftar': tanggalDaftar ?? DateTime.now().toString(),
+      'idKelompok': idKelompok,
     };
   }
 
@@ -33,6 +36,7 @@ class RiwayatModel {
       tanggalDaftar: map['tanggalDaftar'] != null
           ? map['tanggalDaftar'] as String
           : null,
+      idKelompok: map['idKelompok'] as String?,
     );
   }
 

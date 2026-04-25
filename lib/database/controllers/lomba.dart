@@ -59,6 +59,8 @@ class LombaController {
         gambarPath: downloadUrl,
         kuota: data.kuota,
         jenis: data.jenis,
+        jenisLomba: data.jenisLomba,
+        jumlahAnggota: data.jumlahAnggota,
         tanggal: data.tanggal,
         lokasi: data.lokasi,
         deskripsi: data.deskripsi,

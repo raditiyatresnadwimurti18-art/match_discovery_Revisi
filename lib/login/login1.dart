@@ -47,31 +47,33 @@ class _Login1State extends State<Login1> {
       builder: (context) {
         return AlertDialog(
           title: Text('Lupa Password', style: kTitleStyle),
-          content: Form(
-            key: dialogFormKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Masukkan email Anda untuk menerima link reset password.',
-                  style: kSubtitleStyle,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: resetEmailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Email tidak boleh kosong';
-                    if (!v.contains('@')) return 'Email tidak valid';
-                    return null;
-                  },
-                  decoration: decorationConstant(
-                    hintText: 'Email',
-                    labelText: 'Email',
-                    prefixIcon: Icons.email_outlined,
+          content: SingleChildScrollView(
+            child: Form(
+              key: dialogFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Masukkan email Anda untuk menerima link reset password.',
+                    style: kSubtitleStyle,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: resetEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Email tidak boleh kosong';
+                      if (!v.contains('@')) return 'Email tidak valid';
+                      return null;
+                    },
+                    decoration: decorationConstant(
+                      hintText: 'Email',
+                      labelText: 'Email',
+                      prefixIcon: Icons.email_outlined,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [

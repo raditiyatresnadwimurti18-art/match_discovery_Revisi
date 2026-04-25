@@ -112,7 +112,7 @@ class _HomeState extends State<Home> {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -180,7 +180,7 @@ class _HomeState extends State<Home> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: kPrimaryColor.withValues(alpha: 0.3),
+                                color: kPrimaryColor.withOpacity(0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),

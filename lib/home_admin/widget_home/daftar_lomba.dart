@@ -24,8 +24,13 @@ class _Widget2State extends State<Widget2> {
   final _lokasiCtrl = TextEditingController();
   final _deskripsiCtrl = TextEditingController();
   final _kuotaCtrl = TextEditingController();
-  final _jenisCtrl = TextEditingController();
   final _tanggalCtrl = TextEditingController();
+  final _jumlahAnggotaCtrl = TextEditingController();
+
+  String? _selectedJenis;
+  String? _selectedJenisLomba;
+  final List<String> _listJenis = ['Akademik', 'Seni', 'Teknologi', 'Kreatif'];
+  final List<String> _listJenisLomba = ['Individual', 'Kelompok'];
 
   String _formatTanggal(String tanggal) {
     try {
@@ -48,8 +53,8 @@ class _Widget2State extends State<Widget2> {
     _lokasiCtrl.dispose();
     _deskripsiCtrl.dispose();
     _kuotaCtrl.dispose();
-    _jenisCtrl.dispose();
     _tanggalCtrl.dispose();
+    _jumlahAnggotaCtrl.dispose();
     super.dispose();
   }
 
@@ -86,7 +91,12 @@ class _Widget2State extends State<Widget2> {
       _lokasiCtrl.text = e.lokasi ?? '';
       _deskripsiCtrl.text = e.deskripsi ?? '';
       _kuotaCtrl.text = e.kuota.toString();
-      _jenisCtrl.text = e.jenis ?? '';
+      
+      // Validasi agar nilai dari database ada di dalam list dropdown
+      _selectedJenis = _listJenis.contains(e.jenis) ? e.jenis : _listJenis.first;
+      _selectedJenisLomba = _listJenisLomba.contains(e.jenisLomba) ? e.jenisLomba : _listJenisLomba.first;
+      
+      _jumlahAnggotaCtrl.text = e.jumlahAnggota?.toString() ?? '';
       _tanggalCtrl.text = e.tanggal ?? '';
       _imagePath = e.gambarPath;
     } else {
@@ -94,7 +104,9 @@ class _Widget2State extends State<Widget2> {
       _lokasiCtrl.clear();
       _deskripsiCtrl.clear();
       _kuotaCtrl.clear();
-      _jenisCtrl.clear();
+      _selectedJenis = null;
+      _selectedJenisLomba = null;
+      _jumlahAnggotaCtrl.clear();
       _tanggalCtrl.clear();
       _imagePath = null;
     }
@@ -160,15 +172,54 @@ class _Widget2State extends State<Widget2> {
                   decoration: decorationConstant(hintText: 'Lokasi', labelText: 'Lokasi', prefixIcon: Icons.location_on_outlined),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _jenisCtrl,
-                  decoration: decorationConstant(hintText: 'Jenis Lomba', labelText: 'Jenis', prefixIcon: Icons.category_outlined),
+                DropdownButtonFormField<String>(
+                  value: _selectedJenis,
+                  items: _listJenis.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setModal(() {
+                      _selectedJenis = newValue;
+                    });
+                  },
+                  decoration: decorationConstant(hintText: 'Pilih Kategori', labelText: 'Kategori', prefixIcon: Icons.category_outlined),
                 ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedJenisLomba,
+                  items: _listJenisLomba.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setModal(() {
+                      _selectedJenisLomba = newValue;
+                    });
+                  },
+                  decoration: decorationConstant(hintText: 'Pilih Jenis Lomba', labelText: 'Jenis Lomba', prefixIcon: Icons.group_outlined),
+                ),
+                if (_selectedJenisLomba == 'Kelompok') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _jumlahAnggotaCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: decorationConstant(hintText: 'Jumlah Anggota per Kelompok', labelText: 'Jumlah Anggota', prefixIcon: Icons.person_add_alt_1_outlined),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextField(
                   controller: _kuotaCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: decorationConstant(hintText: 'Kuota Peserta', labelText: 'Kuota', prefixIcon: Icons.people_outline),
+                  decoration: decorationConstant(
+                    hintText: _selectedJenisLomba == 'Kelompok' ? 'Total Kuota Kelompok' : 'Total Kuota Peserta', 
+                    labelText: _selectedJenisLomba == 'Kelompok' ? 'Kuota Kelompok' : 'Kuota Peserta', 
+                    prefixIcon: Icons.people_outline
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -192,6 +243,11 @@ class _Widget2State extends State<Widget2> {
                   child: ElevatedButton(
                     style: kPrimaryButtonStyle(),
                     onPressed: () async {
+                      if (_selectedJenis == null || _selectedJenisLomba == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harap pilih kategori dan jenis lomba'), backgroundColor: Colors.orange));
+                        return;
+                      }
+
                       showDialog(
                         context: context,
                         barrierDismissible: false,
@@ -204,7 +260,9 @@ class _Widget2State extends State<Widget2> {
                         lokasi: _lokasiCtrl.text,
                         gambarPath: _imagePath,
                         kuota: int.tryParse(_kuotaCtrl.text) ?? 0,
-                        jenis: _jenisCtrl.text,
+                        jenis: _selectedJenis!,
+                        jenisLomba: _selectedJenisLomba!,
+                        jumlahAnggota: _selectedJenisLomba == 'Kelompok' ? (int.tryParse(_jumlahAnggotaCtrl.text) ?? 0) : null,
                         deskripsi: _deskripsiCtrl.text,
                         tanggal: _tanggalCtrl.text,
                       );
@@ -326,7 +384,7 @@ class _Widget2State extends State<Widget2> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: kPrimaryColor.withValues(alpha: 0.1),
+                    color: kPrimaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(Icons.emoji_events_rounded, color: kPrimaryColor),
@@ -407,7 +465,7 @@ class _Widget2State extends State<Widget2> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: kPrimaryColor.withValues(alpha: 0.05),
+                                              color: kPrimaryColor.withOpacity(0.05),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(

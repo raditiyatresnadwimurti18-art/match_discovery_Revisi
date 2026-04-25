@@ -339,7 +339,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
               onPressed: _showLogoutConfirm,
               icon: const Icon(Icons.logout_rounded, size: 20),
               label: const Text("Keluar"),
-              style: kSecondaryButtonStyle(radius: 18).copyWith(foregroundColor: WidgetStateProperty.all(Colors.red), side: WidgetStateProperty.all(const BorderSide(color: Colors.red, width: 1.5))),
+              style: kSecondaryButtonStyle(radius: 18).copyWith(foregroundColor: MaterialStateProperty.all(Colors.red), side: MaterialStateProperty.all(const BorderSide(color: Colors.red, width: 1.5))),
             ),
           ),
           const SizedBox(height: 40),
@@ -354,7 +354,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.all(12),
-        leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
+        leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
         title: Text(title, style: kTitleStyle.copyWith(fontSize: 15)),
         subtitle: Text(subtitle, style: kSubtitleStyle.copyWith(fontSize: 12)),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
@@ -369,7 +369,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
       decoration: kCardDecoration(radius: 18),
       child: Row(
         children: [
-          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: kPrimaryColor.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: kPrimaryColor, size: 22)),
+          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: kPrimaryColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: kPrimaryColor, size: 22)),
           const SizedBox(width: 16),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: kSubtitleStyle.copyWith(fontSize: 11, fontWeight: FontWeight.bold)), const SizedBox(height: 2), Text(value, style: kBodyStyle.copyWith(fontWeight: FontWeight.w600, fontSize: 15))])),
           if (trailing != null) trailing,

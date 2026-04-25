@@ -31,7 +31,9 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Konfirmasi Hapus Admin"),
-        content: Text("Apakah Anda yakin ingin menghapus admin ${admin.nama}?"),
+        content: SingleChildScrollView(
+          child: Text("Apakah Anda yakin ingin menghapus admin ${admin.nama}?"),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -117,7 +119,9 @@ class _DaftarAdminPageState extends State<DaftarAdminPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Konfirmasi Hapus User"),
-        content: Text("Apakah Anda yakin ingin menghapus user ${user.nama}?"),
+        content: SingleChildScrollView(
+          child: Text("Apakah Anda yakin ingin menghapus user ${user.nama}?"),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

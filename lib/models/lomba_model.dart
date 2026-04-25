@@ -10,6 +10,8 @@ class LombaModel {
   final String tanggal;
   final String lokasi;
   final String deskripsi;
+  final String jenisLomba; // Individual atau Kelompok
+  final int? jumlahAnggota;
 
   LombaModel({
     this.id,
@@ -20,6 +22,8 @@ class LombaModel {
     required this.tanggal,
     required this.lokasi,
     required this.deskripsi,
+    required this.jenisLomba,
+    this.jumlahAnggota,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +36,8 @@ class LombaModel {
       'tanggal': tanggal,
       'lokasi': lokasi,
       'deskripsi': deskripsi,
+      'jenisLomba': jenisLomba,
+      'jumlahAnggota': jumlahAnggota,
     };
   }
 
@@ -41,10 +47,12 @@ class LombaModel {
       judul: map['judul'] ?? '',
       gambarPath: map['gambarPath'],
       kuota: map['kuota'] ?? 0,
-      jenis: map['jenis'] ?? '',
+      jenis: map['jenis'] ?? 'Akademik',
       tanggal: map['tanggal'] ?? '',
       lokasi: map['lokasi'] ?? '',
       deskripsi: map['deskripsi'] ?? '',
+      jenisLomba: map['jenisLomba'] ?? 'Individual',
+      jumlahAnggota: map['jumlahAnggota'] != null ? (map['jumlahAnggota'] as num).toInt() : null,
     );
   }
 

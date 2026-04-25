@@ -49,6 +49,7 @@ class _TrackRecordUserState extends State<TrackRecordUser> {
             'telepon_user': userSnap.get('tlpon'),
             'judulLomba': rsData['judulLomba'],
             'tanggalSelesai': rsData['tanggalSelesai'],
+            'jenisLomba': rsData['jenisLomba'] ?? 'Individual',
             'idUser': userId,
           });
         }

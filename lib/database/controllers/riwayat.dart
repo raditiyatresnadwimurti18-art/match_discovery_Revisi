@@ -11,11 +11,10 @@ class RiwayatController {
 
   // ==================== PENDAFTARAN ====================
 
-  static Future<Map<String, dynamic>> ikutiLomba(RiwayatModel riwayat) async {
+  static Future<Map<String, dynamic>> ikutiLomba(RiwayatModel riwayat, {bool reduceKuota = true}) async {
     try {
       return await _firestore.runTransaction((transaction) async {
         // 1. Gunakan ID Dokumen deterministik untuk cek duplikasi pendaftaran
-        // Ini memastikan pengecekan duplikasi aman di dalam transaksi tanpa perlu Query.
         String registrationId = "${riwayat.idUser}_${riwayat.idLomba}";
         DocumentReference riwayatDoc = _riwayatCollection.doc(registrationId);
         DocumentSnapshot riwayatSnap = await transaction.get(riwayatDoc);
@@ -30,7 +29,7 @@ class RiwayatController {
           }
         }
 
-        // 2. Cek kuota lomba
+        // 2. Ambil detail lomba
         DocumentReference lombaRef = _lombaCollection.doc(riwayat.idLomba);
         DocumentSnapshot lombaSnap = await transaction.get(lombaRef);
 
@@ -43,7 +42,7 @@ class RiwayatController {
 
         Map<String, dynamic> lombaData = lombaSnap.data() as Map<String, dynamic>;
         
-        // Penanganan tipe data kuota yang lebih aman (casting/parsing)
+        // Penanganan tipe data kuota
         int currentKuota = 0;
         if (lombaData['kuota'] != null) {
           if (lombaData['kuota'] is int) {
@@ -53,22 +52,24 @@ class RiwayatController {
           }
         }
 
-        if (currentKuota <= 0) {
-          return {
-            'success': false,
-            'message': 'Maaf, kuota lomba sudah penuh.',
-          };
-        }
-
         // 3. Generate Token Unik
         String token = "TKN-${riwayatDoc.id.substring(0, 8).toUpperCase()}";
         String judulLomba = lombaData['judul'] ?? 'Lomba';
 
-        // 4. Kurangi Kuota
-        int newKuota = currentKuota - 1;
-        transaction.update(lombaRef, {'kuota': newKuota});
+        // 4. Kurangi Kuota (Hanya jika reduceKuota true)
+        int newKuota = currentKuota;
+        if (reduceKuota) {
+          if (currentKuota <= 0) {
+            return {
+              'success': false,
+              'message': 'Maaf, kuota sudah penuh.',
+            };
+          }
+          newKuota = currentKuota - 1;
+          transaction.update(lombaRef, {'kuota': newKuota});
+        }
 
-        // 5. Simpan ke Riwayat (menggunakan ID deterministik agar tidak duplikat)
+        // 5. Simpan ke Riwayat
         transaction.set(riwayatDoc, {
           'id': registrationId,
           'idUser': riwayat.idUser,
@@ -77,13 +78,14 @@ class RiwayatController {
           'status': 'aktif',
           'token': token,
           'judulLomba': judulLomba,
+          'idKelompok': riwayat.idKelompok,
         });
 
-        // 6. Jika kuota habis, pindahkan ke riwayatEvent (Selesai) sesuai permintaan
-        if (newKuota <= 0) {
+        // 6. Jika kuota habis (setelah dikurangi), pindahkan ke riwayatEvent
+        if (reduceKuota && newKuota <= 0) {
           lombaData['idLombaAsli'] = lombaSnap.id;
           lombaData['statusLomba'] = 'Penuh/Selesai';
-          lombaData['kuota'] = 0; // Pastikan kuota tercatat 0
+          lombaData['kuota'] = 0;
           
           transaction.set(_riwayatEventCollection.doc(lombaSnap.id), lombaData);
           transaction.delete(lombaRef);
@@ -123,6 +125,63 @@ class RiwayatController {
     }
   }
 
+  static Future<void> konfirmasiSelesaiKelompok(String idKelompok, String idLomba) async {
+    try {
+      final WriteBatch batch = _firestore.batch();
+      
+      // 1. Cari semua riwayat yang terkait dengan kelompok ini (tanpa filter lomba agar lebih pasti)
+      QuerySnapshot riwayatSnap = await _riwayatCollection
+          .where('idKelompok', isEqualTo: idKelompok)
+          .where('status', isEqualTo: 'aktif')
+          .get();
+
+      if (riwayatSnap.docs.isEmpty) {
+        print("Peringatan: Tidak ada riwayat aktif ditemukan untuk kelompok $idKelompok");
+      }
+
+      // 2. Ambil detail lomba (judul)
+      String judulLomba = 'Lomba Tidak Diketahui';
+      DocumentSnapshot lombaSnap = await _lombaCollection.doc(idLomba).get();
+      if (lombaSnap.exists) {
+        judulLomba = lombaSnap.get('judul') as String;
+      } else {
+        DocumentSnapshot eventSnap = await _riwayatEventCollection.doc(idLomba).get();
+        if (eventSnap.exists) {
+          judulLomba = eventSnap.get('judul') as String;
+        }
+      }
+
+      final tanggalSelesai = DateTime.now().toIso8601String().split('T').first;
+
+      // 3. Proses setiap anggota dalam riwayat
+      for (var doc in riwayatSnap.docs) {
+        // Update status di riwayat jadi 'selesai'
+        batch.update(doc.reference, {'status': 'selesai'});
+
+        // Tambahkan ke riwayatSelesai untuk setiap anggota
+        String userId = doc.get('idUser');
+        DocumentReference newSelesaiRef = _riwayatSelesaiCollection.doc();
+        batch.set(newSelesaiRef, {
+          'idUser': userId,
+          'judulLomba': judulLomba,
+          'tanggalSelesai': tanggalSelesai,
+          'jenisLomba': 'Kelompok',
+          'idKelompok': idKelompok,
+        });
+      }
+
+      // 4. Hapus dokumen kelompok agar hilang dari halaman "Kelompok Saya"
+      batch.delete(_firestore.collection('kelompok').doc(idKelompok));
+
+      // Eksekusi Batch
+      await batch.commit();
+      print("Berhasil menyelesaikan kelompok $idKelompok");
+    } catch (e) {
+      print("Error konfirmasiSelesaiKelompok: $e");
+      throw Exception("Gagal menyelesaikan kelompok: $e");
+    }
+  }
+
   static Future<void> konfirmasiSelesaiManual(String userId, String lombaId) async {
     try {
       // Update status in riwayat
@@ -152,9 +211,22 @@ class RiwayatController {
         idUser: userId,
         judulLomba: judulLomba ?? 'Tidak Diketahui',
         tanggalSelesai: DateTime.now().toIso8601String().split('T').first,
+        jenisLomba: 'Individual',
       ).toMap());
     } catch (e) {
       print("Error konfirmasiSelesaiManual: $e");
+    }
+  }
+
+  static Future<List<RiwayatModel>> getRiwayatByUserId(String userId) async {
+    try {
+      QuerySnapshot snap = await _riwayatCollection
+          .where('idUser', isEqualTo: userId)
+          .get();
+      return snap.docs.map((doc) => RiwayatModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id)).toList();
+    } catch (e) {
+      print("Error getRiwayatByUserId: $e");
+      return [];
     }
   }
 
@@ -162,41 +234,91 @@ class RiwayatController {
 
   static Future<List<Map<String, dynamic>>> getRiwayatUser(String userId) async {
     try {
-      QuerySnapshot riwayatSnap = await _riwayatCollection
-          .where('idUser', isEqualTo: userId)
-          .where('status', isEqualTo: 'aktif')
-          .get();
+      // 1. Ambil riwayat resmi dan kelompok pending secara paralel
+      final results_queries = await Future.wait([
+        _riwayatCollection.where('idUser', isEqualTo: userId).where('status', isEqualTo: 'aktif').get(),
+        _firestore.collection('kelompok').where('anggotaIds', arrayContains: userId).where('status', isEqualTo: 'mencari').get(),
+      ]);
+
+      QuerySnapshot riwayatSnap = results_queries[0];
+      QuerySnapshot kelompokSnap = results_queries[1];
 
       List<Map<String, dynamic>> results = [];
+      Set<String> processedLombaIds = {};
 
-      for (var doc in riwayatSnap.docs) {
+      // Gunakan Future.wait untuk ambil detail semua riwayat secara paralel
+      List<Future<void>> riwayatFutures = riwayatSnap.docs.map((doc) async {
         Map<String, dynamic> riwayatData = doc.data() as Map<String, dynamic>;
         String lombaId = riwayatData['idLomba'];
-
-        DocumentSnapshot lombaSnap = await _lombaCollection.doc(lombaId).get();
-        Map<String, dynamic>? detail;
+        processedLombaIds.add(lombaId);
         
-        if (lombaSnap.exists) {
-          detail = lombaSnap.data() as Map<String, dynamic>?;
-        } else {
-          DocumentSnapshot eventSnap = await _riwayatEventCollection.doc(lombaId).get();
-          if (eventSnap.exists) {
-            detail = eventSnap.data() as Map<String, dynamic>?;
-          }
+        String? idKelompok = riwayatData['idKelompok'];
+        
+        // Ambil info leader dan detail lomba secara paralel
+        final details = await Future.wait([
+          idKelompok != null 
+            ? _firestore.collection('kelompok').doc(idKelompok).get() 
+            : Future.value(null),
+          _lombaCollection.doc(lombaId).get().then((snap) => snap.exists ? snap : _riwayatEventCollection.doc(lombaId).get()),
+        ]);
+
+        DocumentSnapshot? kSnap = details[0] as DocumentSnapshot?;
+        DocumentSnapshot? lombaSnap = details[1] as DocumentSnapshot?;
+
+        String? idLeader;
+        if (kSnap != null && kSnap.exists) {
+          idLeader = (kSnap.data() as Map<String, dynamic>?)?['idLeader'];
         }
 
-        if (detail != null) {
+        if (lombaSnap != null && lombaSnap.exists) {
+          Map<String, dynamic> detail = lombaSnap.data() as Map<String, dynamic>;
           results.add({
             'idRiwayat': doc.id,
             'idLomba': lombaId,
-            'status': riwayatData['status'],
-            'judul': detail['judul'],
-            'lokasi': detail['lokasi'],
-            'tanggal': detail['tanggal'],
+            'status': 'aktif',
+            'idKelompok': idKelompok,
+            'idLeader': idLeader,
+            'isLeader': idLeader == userId,
+            'judul': detail['judul'] ?? riwayatData['judulLomba'] ?? 'Lomba',
+            'lokasi': detail['lokasi'] ?? '-',
+            'tanggal': detail['tanggal'] ?? '-',
             'gambarPath': detail['gambarPath'],
+            'isPendingGroup': false,
           });
         }
-      }
+      }).toList();
+
+      await Future.wait(riwayatFutures);
+
+      // Ambil detail semua kelompok pending secara paralel
+      List<Future<void>> kelompokFutures = kelompokSnap.docs.map((doc) async {
+        Map<String, dynamic> kData = doc.data() as Map<String, dynamic>;
+        String lombaId = kData['idLomba'];
+        
+        if (processedLombaIds.contains(lombaId)) return;
+
+        DocumentSnapshot lombaSnap = await _lombaCollection.doc(lombaId).get();
+        if (lombaSnap.exists) {
+          Map<String, dynamic> detail = lombaSnap.data() as Map<String, dynamic>;
+          results.add({
+            'idRiwayat': 'pending_${doc.id}',
+            'idLomba': lombaId,
+            'status': 'mencari',
+            'idKelompok': doc.id,
+            'idLeader': kData['idLeader'],
+            'isLeader': kData['idLeader'] == userId,
+            'judul': detail['judul'] ?? 'Lomba',
+            'lokasi': detail['lokasi'] ?? '-',
+            'tanggal': detail['tanggal'] ?? '-',
+            'gambarPath': detail['gambarPath'],
+            'isPendingGroup': true,
+          });
+        }
+      }).toList();
+
+      await Future.wait(kelompokFutures);
+      
+      results.sort((a, b) => (a['judul'] as String).compareTo(b['judul'] as String));
       return results;
     } catch (e) {
       print("Error getRiwayatUser: $e");

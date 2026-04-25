@@ -56,7 +56,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
                 width: 300,
                 height: 300,
                 decoration: BoxDecoration(
-                  color: kPrimaryColor.withValues(alpha: 0.03),
+                  color: kPrimaryColor.withOpacity(0.03),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -75,7 +75,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: kPrimaryColor.withValues(alpha: 0.1),
+                          color: kPrimaryColor.withOpacity(0.1),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),
@@ -141,7 +141,7 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
               delay: const Duration(milliseconds: 1200),
               child: Center(
                 child: Text(
-                  'v1.2.0 • 2024',
+                  'v1.2.0 • 2026',
                   style: kSubtitleStyle.copyWith(fontSize: 10),
                 ),
               ),

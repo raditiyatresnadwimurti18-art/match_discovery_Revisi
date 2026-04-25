@@ -51,7 +51,9 @@ class _ReggisterState extends State<Reggister> {
             ),
           ],
         ),
-        content: Text(message, style: const TextStyle(fontSize: 14)),
+        content: SingleChildScrollView(
+          child: Text(message, style: const TextStyle(fontSize: 14)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
