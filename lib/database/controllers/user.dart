@@ -94,7 +94,7 @@ class UserController {
     }
   }
 
-  static Future<void> updateUserDetail({
+  static Future<bool> updateUserDetail({
     required String id,
     required String nama,
     required String email,
@@ -106,33 +106,46 @@ class UserController {
     try {
       await _usersCollection.doc(id).update({
         'nama': nama,
+        'nama_search': nama.toLowerCase(),
         'email': email,
         'tlpon': tlpon,
         'asalKota': asalKota,
         'pendidikanTerakhir': pendidikanTerakhir,
         'asalSekolah': asalSekolah,
       });
+      return true;
     } catch (e) {
       print("Error updateUserDetail: $e");
+      return false;
     }
   }
 
-  static Future<void> updateUser(LoginModel user) async {
-    if (user.id == null) throw Exception("ID wajib ada");
+  static Future<bool> updateUser(LoginModel user) async {
+    if (user.id == null) return false;
     try {
-      await _usersCollection.doc(user.id!).update(user.toMap());
+      Map<String, dynamic> data = user.toMap();
+      if (user.nama != null) {
+        data['nama_search'] = user.nama!.toLowerCase();
+      }
+      await _usersCollection.doc(user.id!).update(data);
+      return true;
     } catch (e) {
       print("Error updateUser: $e");
+      return false;
     }
   }
 
   // ==================== DELETE ====================
 
-  static Future<void> deleteUser(String id) async {
+  static Future<bool> deleteUser(String id) async {
     try {
+      // NOTE: Hanya menghapus dari Firestore. 
+      // Untuk menghapus dari Firebase Auth, diperlukan Firebase Admin SDK atau Firebase Functions.
       await _usersCollection.doc(id).delete();
+      return true;
     } catch (e) {
       print("Error deleteUser: $e");
+      return false;
     }
   }
 }

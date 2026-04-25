@@ -163,13 +163,13 @@ class AdminController {
     }
   }
 
-  static Future<void> updateAdminDetail(
+  static Future<bool> updateAdminDetail(
     String id,
     String nama,
     String username,
     String password,
   ) async {
-    if (id == 'super_admin_local') return; // Lewati jika akun lokal
+    if (id == 'super_admin_local') return false; // Lewati jika akun lokal
     try {
       // 1. Ambil data lama untuk mendapatkan email dan password lama (untuk Auth update)
       DocumentSnapshot doc = await _adminsCollection.doc(id).get();
@@ -180,11 +180,15 @@ class AdminController {
 
         // 2. Update Firebase Authentication jika password berubah
         if (email != null && oldPassword != null && oldPassword != password) {
-          await AuthController.updateAdminAuth(
+          bool authSuccess = await AuthController.updateAdminAuth(
             email: email,
             oldPassword: oldPassword,
             newPassword: password,
           );
+          if (!authSuccess) {
+            print("AdminController: Gagal memperbarui Auth, update Firestore dibatalkan.");
+            return false;
+          }
         }
       }
 
@@ -194,39 +198,47 @@ class AdminController {
         'username': username,
         'password': password,
       });
+      return true;
     } catch (e) {
       print("Error updateAdminDetail: $e");
+      return false;
     }
   }
 
   // ==================== DELETE ====================
 
-  static Future<void> deleteAdmin(String id) async {
+  static Future<bool> deleteAdmin(String id) async {
     try {
       // 1. Ambil data admin sebelum dihapus
       DocumentSnapshot doc = await _adminsCollection.doc(id).get();
-      if (!doc.exists) return;
+      if (!doc.exists) return false;
       
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       String? email = data['email'];
       String? password = data['password'];
       String? imageUrl = data['profilePath'];
 
-      // 2. Hapus gambar dari Storage
+      // 2. Hapus gambar dari Storage (No-op in Base64 mode, but kept for compatibility)
       if (imageUrl != null) {
         await StorageService.deleteImage(imageUrl);
       }
 
       // 3. Hapus dari Firebase Authentication (jika ada email & password)
       if (email != null && password != null) {
-        await AuthController.deleteAdminAuth(email: email, password: password);
+        bool authDeleted = await AuthController.deleteAdminAuth(email: email, password: password);
+        if (!authDeleted) {
+          print("AdminController: Gagal menghapus Auth, penghapusan Firestore dibatalkan.");
+          return false;
+        }
       }
 
       // 4. Hapus dokumen dari Firestore
       await _adminsCollection.doc(id).delete();
       print("AdminController: Berhasil menghapus admin dari Firestore dan Auth.");
+      return true;
     } catch (e) {
       print("Error deleteAdmin: $e");
+      return false;
     }
   }
 }

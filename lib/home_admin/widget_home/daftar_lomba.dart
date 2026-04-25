@@ -276,10 +276,10 @@ class _Widget2State extends State<Widget2> {
 
                       await _refreshLomba();
                       if (!mounted) return;
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(); // Tutup dialog loading
                       
                       if (result['success'] == true) {
-                        Navigator.of(context).pop();
+                        if (mounted) Navigator.of(context).pop(); // Tutup bottom sheet
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(id == null ? 'Berhasil tambah' : 'Berhasil update'), backgroundColor: Colors.green));
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Gagal'), backgroundColor: Colors.red));

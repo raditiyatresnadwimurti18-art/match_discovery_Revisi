@@ -1,6 +1,6 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:match_discovery/util/app_theme.dart';
 
 class PromoSlider extends StatefulWidget {
   const PromoSlider({super.key});
@@ -24,7 +24,7 @@ class _PromoSliderState extends State<PromoSlider> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+    _timer = Timer.periodic(const Duration(seconds: 4), (Timer timer) {
       if (_currentPage < images.length - 1) {
         _currentPage++;
       } else {
@@ -33,8 +33,8 @@ class _PromoSliderState extends State<PromoSlider> {
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           _currentPage,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.easeInOutQuart,
         );
       }
     });
@@ -51,24 +51,24 @@ class _PromoSliderState extends State<PromoSlider> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          'Hallo, Peserta!\u{1F44B}',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        Text('Temukan kompetisi terbaik untuk karirmu.'),
-
-        SizedBox(height: 20),
         SizedBox(
-          height: 200,
+          height: 180,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemCount: images.length,
             itemBuilder: (context, index) {
               return Container(
-                margin: const EdgeInsets.all(8),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimaryColor.withOpacity(0.08),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    )
+                  ],
                   image: DecorationImage(
                     image: AssetImage(images[index]),
                     fit: BoxFit.cover,
@@ -78,17 +78,19 @@ class _PromoSliderState extends State<PromoSlider> {
             },
           ),
         ),
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(images.length, (index) {
+            bool isActive = _currentPage == index;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              height: 8,
-              width: _currentPage == index ? 20 : 8,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              height: 6,
+              width: isActive ? 18 : 6,
               decoration: BoxDecoration(
-                color: _currentPage == index ? Colors.blue : Colors.grey,
-                borderRadius: BorderRadius.circular(5),
+                color: isActive ? kPrimaryColor : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(3),
               ),
             );
           }),

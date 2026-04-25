@@ -120,19 +120,23 @@ class LombaController {
 
   // ==================== DELETE ====================
 
-  static Future<void> deleteLomba(String id) async {
+  static Future<bool> deleteLomba(String id) async {
     try {
       // 1. Hapus gambar dari Storage jika ada
       DocumentSnapshot doc = await _lombaCollection.doc(id).get();
       if (doc.exists) {
         String? imageUrl = (doc.data() as Map<String, dynamic>)['gambarPath'];
-        await StorageService.deleteImage(imageUrl);
+        if (imageUrl != null) {
+          await StorageService.deleteImage(imageUrl);
+        }
       }
       
       // 2. Hapus dokumen dari Firestore
       await _lombaCollection.doc(id).delete();
+      return true;
     } catch (e) {
       print("Error deleteLomba: $e");
+      return false;
     }
   }
 }

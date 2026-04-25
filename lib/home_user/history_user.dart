@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/controllers/kelompok.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/util/app_theme.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HistoryUser extends StatefulWidget {
   const HistoryUser({super.key});
@@ -16,431 +15,247 @@ class HistoryUser extends StatefulWidget {
 }
 
 class _HistoryUserState extends State<HistoryUser> {
-  List<Map<String, dynamic>> _activeLomba = [];
-  List<Map<String, dynamic>> _finishedLomba = [];
-  bool _isLoading = true;
-  String? _userId;
+  String? _myId;
+  bool _initializing = true;
 
   @override
   void initState() {
     super.initState();
-    _loadAllData();
+    _initId();
   }
 
-  Future<void> _loadAllData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-
-    _userId = PreferenceHandler.getUserId();
-
-    if (_userId == null) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    final results = await Future.wait([
-      RiwayatController.getRiwayatUser(_userId!),
-      RiwayatController.getTrackRecordPerLomba(_userId!),
-    ]);
-
-    if (!mounted) return;
-    setState(() {
-      _activeLomba = results[0];
-      _finishedLomba = results[1];
-      _isLoading = false;
-    });
+  Future<void> _initId() async {
+    _myId = await PreferenceHandler.getUserId();
+    if (mounted) setState(() => _initializing = false);
   }
 
-  void _showConfirmationDialog(String lombaId, String judulLomba, {String? idKelompok}) {
-    final outerContext = context;
+  void _showRiwayatDetail(Map<String, dynamic> item) {
     showDialog(
-      context: outerContext,
-      builder: (dialogContext) => AlertDialog(
+      context: context,
+      builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
+        title: Column(
           children: [
-            Icon(Icons.stars_rounded, color: idKelompok != null ? Colors.amber : Colors.green, size: 28),
-            const SizedBox(width: 12),
-            const Flexible(
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: kPrimaryColor.withOpacity(0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.qr_code_2_rounded, size: 40, color: kPrimaryColor),
+            ),
+            const SizedBox(height: 16),
+            Text(item['judul'] ?? 'Detail Pendaftaran', style: kTitleStyle, textAlign: TextAlign.center),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Tunjukkan kode ini kepada panitia", style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(color: kBgColor, borderRadius: BorderRadius.circular(16)),
               child: Text(
-                "Konfirmasi Selesai",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                item['idRiwayat']?.toString().toUpperCase() ?? 'TKN-UNKNOWN',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 2, color: kPrimaryColor),
               ),
             ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Text(
-            idKelompok != null 
-              ? 'Sebagai Ketua Kelompok, Anda akan mengonfirmasi status "Selesai" untuk seluruh anggota tim di lomba "$judulLomba". Lanjutkan?'
-              : 'Apakah Anda sudah selesai mengikuti lomba "$judulLomba"?',
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Batal", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: idKelompok != null ? Colors.amber.shade700 : Colors.green,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          Center(
+            child: ElevatedButton(
+              style: kPrimaryButtonStyle(radius: 12),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Tutup"),
             ),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              
-              try {
-                if (idKelompok != null) {
-                  await RiwayatController.konfirmasiSelesaiKelompok(idKelompok, lombaId);
-                } else {
-                  await RiwayatController.konfirmasiSelesaiManual(_userId!, lombaId);
-                }
-                
-                await _loadAllData();
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(outerContext).showSnackBar(
-                  SnackBar(
-                    content: Text(idKelompok != null ? "Berhasil menyelesaikan lomba untuk seluruh tim!" : "Event berhasil dikonfirmasi selesai!"),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(outerContext).showSnackBar(
-                  SnackBar(content: Text("Gagal: $e"), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: const Text("Ya, Selesai", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  void _handleKonfirmasiSelesai(Map<String, dynamic> item) async {
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Konfirmasi Selesai'),
+        content: Text('Apakah Anda sudah benar-benar menyelesaikan lomba "${item['judul']}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          ElevatedButton(
+            style: kPrimaryButtonStyle(radius: 12),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sudah Selesai'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        if (item['idKelompok'] != null) {
+          await RiwayatController.konfirmasiSelesaiKelompok(item['idKelompok'], item['idLomba']);
+        } else {
+          await RiwayatController.konfirmasiSelesaiManual(_myId!, item['idLomba']);
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Lomba berhasil diselesaikan!"), backgroundColor: Colors.green));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: $e"), backgroundColor: Colors.red));
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: kBgColor,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: TabBar(
-              labelColor: kPrimaryColor,
-              unselectedLabelColor: Colors.grey,
-              indicator: BoxDecoration(
-                color: kPrimaryColor.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              tabs: const [
-                Tab(text: "Lomba Aktif"),
-                Tab(text: "Track Record"),
-              ],
-            ),
-          ),
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: kPrimaryColor))
-            : TabBarView(
-                children: [
-                  _buildActiveList(),
-                  _buildTrackRecordList(),
-                ],
-              ),
+    if (_initializing) return const Center(child: CircularProgressIndicator(color: kPrimaryColor));
+    if (_myId == null) return const Center(child: Text("Silakan login"));
+
+    return Scaffold(
+      backgroundColor: kBgColor,
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: RiwayatController.getRiwayatUserStream(_myId!),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: kPrimaryColor, strokeWidth: 3));
+          }
+          
+          final activeLomba = snapshot.data ?? [];
+          
+          if (activeLomba.isEmpty) return _buildEmptyState();
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            physics: const BouncingScrollPhysics(),
+            itemCount: activeLomba.length,
+            itemBuilder: (context, index) {
+              final item = activeLomba[index];
+              return FadeInUp(
+                delay: Duration(milliseconds: 30 * index),
+                child: _buildLombaCard(item),
+              );
+            },
+          );
+        },
       ),
     );
   }
 
-  Widget _buildActiveList() {
-    if (_activeLomba.isEmpty) return _buildEmpty("Belum ada lomba aktif.");
-    return RefreshIndicator(
-      color: kPrimaryColor,
-      onRefresh: _loadAllData,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: _activeLomba.length,
-        itemBuilder: (context, index) => FadeInUp(
-          delay: Duration(milliseconds: index * 100),
-          child: _buildActiveCard(_activeLomba[index]),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveCard(Map<String, dynamic> item) {
-    final judul = (item['judul'] as String?) ?? 'Tanpa Judul';
-    final lokasi = (item['lokasi'] as String?) ?? '-';
-    final tanggal = (item['tanggal'] as String?) ?? '-';
-    final lombaId = item['idLomba'] as String;
-    final idKelompok = item['idKelompok'] as String?;
-    final isLeader = item['isLeader'] == true;
-    final isPendingGroup = item['isPendingGroup'] == true;
-    final gambar = item['gambarPath'] as String?;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: kCardDecoration(),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildImage(gambar),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (idKelompok != null ? Colors.amber : Colors.blue).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          idKelompok != null ? (isPendingGroup ? "TEAM (SEARCHING)" : "TEAM MATCH") : "INDIVIDUAL",
-                          style: TextStyle(
-                            fontSize: 9, 
-                            fontWeight: FontWeight.bold, 
-                            color: idKelompok != null ? Colors.amber.shade900 : Colors.blue.shade900
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        judul,
-                        style: kTitleStyle.copyWith(fontSize: 15),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      _infoRow(Icons.location_on_rounded, lokasi),
-                      const SizedBox(height: 4),
-                      _infoRow(Icons.calendar_month_rounded, tanggal),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          if (idKelompok != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isLeader ? Colors.amber.withOpacity(0.05) : Colors.grey.withOpacity(0.05),
-                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(kCardRadius), bottomRight: Radius.circular(kCardRadius)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isLeader ? Icons.stars_rounded : (isPendingGroup ? Icons.hourglass_top_rounded : Icons.info_outline_rounded), 
-                    size: 16, 
-                    color: isLeader ? Colors.amber.shade700 : (isPendingGroup ? Colors.orange : Colors.grey)
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      isPendingGroup 
-                        ? "Kelompok belum penuh. Menunggu anggota lain..."
-                        : (isLeader ? "Anda adalah Ketua Kelompok" : "Menunggu Ketua mengonfirmasi selesai"),
-                      style: TextStyle(
-                        fontSize: 12, 
-                        fontWeight: FontWeight.w500,
-                        color: isLeader ? Colors.amber.shade900 : (isPendingGroup ? Colors.orange.shade900 : Colors.grey.shade700)
-                      ),
-                    ),
-                  ),
-                  if (isLeader && !isPendingGroup)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber.shade700,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () => _showConfirmationDialog(lombaId, judul, idKelompok: idKelompok),
-                      child: const Text("Selesai (Team)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                ],
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.check_circle_outline, size: 18),
-                  onPressed: () => _showConfirmationDialog(lombaId, judul),
-                  label: const Text("Konfirmasi Selesai", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrackRecordList() {
-    if (_finishedLomba.isEmpty) return _buildEmpty("Belum ada track record.");
-    return RefreshIndicator(
-      color: kPrimaryColor,
-      onRefresh: _loadAllData,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: _finishedLomba.length,
-        itemBuilder: (context, index) => FadeInLeft(
-          delay: Duration(milliseconds: index * 100),
-          child: _buildTrackRecordCard(_finishedLomba[index]),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrackRecordCard(Map<String, dynamic> item) {
-    final judul = (item['judulLomba'] as String?) ?? 'Tanpa Judul';
-    final tglSelesai = (item['tanggalSelesai'] as String?) ?? '-';
-    final jenisLomba = (item['jenisLomba'] as String?) ?? 'Individual';
-
+  Widget _buildLombaCard(Map<String, dynamic> item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: kCardDecoration(),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: (jenisLomba == 'Kelompok' ? Colors.amber : Colors.green).withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            jenisLomba == 'Kelompok' ? Icons.groups_rounded : Icons.verified_rounded, 
-            color: jenisLomba == 'Kelompok' ? Colors.amber.shade700 : Colors.green,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          judul,
-          style: kTitleStyle.copyWith(fontSize: 14),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: kPrimaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.emoji_events_rounded, color: Colors.orange, size: 28),
+            ),
+            title: Text(item['judul'] ?? 'Lomba', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 15)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    "Selesai: $tglSelesai", 
-                    style: kSubtitleStyle.copyWith(fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(item['lokasi'] ?? '-', style: const TextStyle(fontSize: 12, color: Colors.grey))),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_month_outlined, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(item['tanggal'] ?? '-', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: (jenisLomba == 'Kelompok' ? Colors.amber : Colors.green).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
           ),
-          child: Text(
-            jenisLomba.toUpperCase(),
-            style: TextStyle(
-              fontSize: 8, 
-              fontWeight: FontWeight.bold, 
-              color: jenisLomba == 'Kelompok' ? Colors.amber.shade900 : Colors.green.shade900
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (item['idKelompok'] != null ? Colors.blue : Colors.green).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    item['idKelompok'] != null ? 'Kelompok' : 'Individual',
+                    style: TextStyle(
+                      color: item['idKelompok'] != null ? Colors.blue.shade800 : Colors.green.shade800,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (item['idKelompok'] == null || item['isLeader'] == true)
+                  ElevatedButton(
+                    onPressed: () => _handleKonfirmasiSelesai(item),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      minimumSize: const Size(0, 36),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text('KONFIRMASI', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                  ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => _showRiwayatDetail(item),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text('LIHAT KODE', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                ),
+              ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImage(String? gambar) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 80,
-        height: 80,
-        color: Colors.grey.shade100,
-        child: gambar != null && gambar.isNotEmpty
-            ? (gambar.startsWith('data:image')
-                ? Image.memory(
-                    base64Decode(gambar.split(',').last),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.image_outlined, color: Colors.grey),
-                  )
-                : (gambar.startsWith('http') 
-                    ? Image.network(
-                        gambar,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.image_outlined, color: Colors.grey),
-                      )
-                    : Image.file(
-                        File(gambar),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.image_outlined, color: Colors.grey),
-                      )))
-            : const Icon(Icons.image_outlined, color: Colors.grey),
-      ),
-    );
-  }
-
-  Widget _buildEmpty(String message) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.history_rounded, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(message, style: kSubtitleStyle),
         ],
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String value) => Row(
-    children: [
-      Icon(icon, size: 14, color: Colors.grey),
-      const SizedBox(width: 6),
-      Expanded(
-        child: Text(
-          value,
-          style: kSubtitleStyle,
-          overflow: TextOverflow.ellipsis,
-        ),
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history_rounded, size: 64, color: Colors.grey.shade200),
+          const SizedBox(height: 16),
+          Text(
+            'Belum ada aktivitas lomba',
+            style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
-    ],
-  );
+    );
+  }
 }

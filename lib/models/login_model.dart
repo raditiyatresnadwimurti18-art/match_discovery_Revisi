@@ -11,6 +11,7 @@ class LoginModel {
   String? pendidikanTerakhir;
   String? asalSekolah;
   String? tanggal_daftar;
+  String? fcmToken;
 
   LoginModel({
     this.id,
@@ -24,6 +25,7 @@ class LoginModel {
     this.pendidikanTerakhir,
     this.asalSekolah,
     this.tanggal_daftar,
+    this.fcmToken,
   });
 
   // Fungsi untuk mengubah data dari Database (Map) ke Object Flutter
@@ -40,6 +42,7 @@ class LoginModel {
       pendidikanTerakhir: map['pendidikanTerakhir'],
       asalSekolah: map['asalSekolah'],
       tanggal_daftar: map['tanggal_daftar'],
+      fcmToken: map['fcmToken'],
     );
   }
 
@@ -57,6 +60,7 @@ class LoginModel {
       'pendidikanTerakhir': pendidikanTerakhir,
       'asalSekolah': asalSekolah,
       'tanggal_daftar': tanggal_daftar,
+      'fcmToken': fcmToken,
     };
   }
 }

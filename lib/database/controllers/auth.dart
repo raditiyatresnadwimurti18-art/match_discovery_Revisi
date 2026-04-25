@@ -17,6 +17,7 @@ class AuthController {
   /// Registrasi User baru.
   /// Return 'success' jika berhasil, atau pesan error Firebase jika gagal.
   static Future<String> registerUser(LoginModel user) async {
+    User? firebaseUser;
     try {
       // 1. Buat akun di Firebase Authentication
       UserCredential credential = await _auth.createUserWithEmailAndPassword(
@@ -24,22 +25,30 @@ class AuthController {
         password: user.password!,
       );
 
-      String uid = credential.user!.uid;
+      firebaseUser = credential.user;
+      String uid = firebaseUser!.uid;
 
       // 2. Simpan data tambahan ke Firestore koleksi 'users'
-      await _db.collection('users').doc(uid).set({
-        'id': uid,
-        'nama': user.nama,
-        'email': user.email,
-        'tlpon': user.tlpon,
-        'role': 'user',
-        'tanggal_daftar': DateTime.now().toIso8601String(),
-      });
+      try {
+        await _db.collection('users').doc(uid).set({
+          'id': uid,
+          'nama': user.nama,
+          'nama_search': user.nama?.toLowerCase(),
+          'email': user.email,
+          'tlpon': user.tlpon,
+          'role': 'user',
+          'tanggal_daftar': DateTime.now().toIso8601String(),
+        });
+      } catch (firestoreError) {
+        print("Error Firestore registerUser: $firestoreError");
+        // Opsional: Hapus user Auth jika Firestore gagal agar tidak inkonsisten
+        // Tapi ini berisiko jika penghapusan juga gagal.
+        return 'firestore-error';
+      }
 
       return 'success';
     } on FirebaseAuthException catch (e) {
       print("Error Firebase Auth: ${e.code} - ${e.message}");
-      // Kembalikan kode error spesifik dari Firebase
       return e.code;
     } catch (e) {
       print("Error registerUser: $e");
@@ -69,9 +78,16 @@ class AuthController {
         await PreferenceHandler.setRole('user');
         await PreferenceHandler.storingUserId(uid);
         
+        // Update FCM Token
+        String? token = await NotificationService.getToken();
+        if (token != null) {
+          await _db.collection('users').doc(uid).update({'fcmToken': token});
+        }
+        
         // Subscribe to notifications
         await NotificationService.subscribeToLombaTopic();
         NotificationService.listenToNewLomba(); // Mulai dengarkan data baru
+        NotificationService.listenToUserNotifications(uid); // Mulai dengarkan notifikasi user
         
         return LoginModel.fromMap(data, docId: uid);
       }

@@ -59,6 +59,45 @@ class NotificationService {
     });
   }
 
+  static Future<String?> getToken() async {
+    return await _messaging.getToken();
+  }
+
+  /// Memantau koleksi 'notifications' untuk user tertentu
+  static void listenToUserNotifications(String userId) {
+    print("NotificationService: Mulai memantau notifikasi untuk user $userId...");
+
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('targetId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data();
+          if (data != null) {
+            // Konversi Timestamp ke String agar bisa di-encode ke JSON
+            Map<String, dynamic> serializableData = Map.from(data);
+            serializableData.forEach((key, value) {
+              if (value is Timestamp) {
+                serializableData[key] = value.toDate().toIso8601String();
+              }
+            });
+
+            _showLocalNotification(
+              title: data['title'] ?? 'Notifikasi Baru',
+              body: data['body'] ?? '',
+              payload: jsonEncode(serializableData),
+            );
+            // Tandai sudah dibaca agar tidak muncul lagi saat app restart
+            change.doc.reference.update({'isRead': true});
+          }
+        }
+      }
+    });
+  }
+
   /// Memantau koleksi 'lomba' di Firestore untuk notifikasi real-time
   static void listenToNewLomba() {
     if (_isListening) return;

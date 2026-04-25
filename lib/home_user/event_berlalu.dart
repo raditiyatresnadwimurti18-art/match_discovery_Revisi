@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/util/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EventBerlalu extends StatefulWidget {
   const EventBerlalu({super.key});
@@ -42,7 +43,7 @@ class _EventBerlaluState extends State<EventBerlalu> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(color: kPrimaryColor));
+                child: CircularProgressIndicator(color: kPrimaryColor, strokeWidth: 3));
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -50,23 +51,12 @@ class _EventBerlaluState extends State<EventBerlalu> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(
-                          color: Colors.grey.withOpacity(0.1), blurRadius: 20)],
-                    ),
-                    child: const Icon(Icons.event_busy_outlined,
-                        size: 56, color: kPrimaryColor),
-                  ),
+                  Icon(Icons.event_available_rounded, size: 64, color: Colors.grey.shade200),
                   const SizedBox(height: 16),
-                  const Text('Belum ada event yang berakhir',
-                      style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500)),
+                  Text(
+                    'Belum ada riwayat event selesai',
+                    style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             );
@@ -76,7 +66,8 @@ class _EventBerlaluState extends State<EventBerlalu> {
             color: kPrimaryColor,
             onRefresh: () async => _refreshData(),
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+              physics: const BouncingScrollPhysics(),
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) =>
                   _buildCard(snapshot.data![index]),
@@ -90,86 +81,88 @@ class _EventBerlaluState extends State<EventBerlalu> {
   Widget _buildCard(Map<String, dynamic> event) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: kCardDecoration(),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(kBorderRadius),
-        child: Opacity(
-          opacity: 0.85,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
             children: [
-              // Gambar + Badge
-              Stack(
-                children: [
-                  event['gambarPath'] != null
-                      ? (event['gambarPath']!.toString().startsWith('data:image')
-                          ? Image.memory(
-                              base64Decode(event['gambarPath']!.toString().split(',').last),
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            )
-                          : Image.file(
-                              File(event['gambarPath']),
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ))
-                      : Container(
-                          height: 160,
-                          width: double.infinity,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.image_not_supported_outlined,
-                              size: 48, color: Colors.grey)),
-                  Positioned(
-                    top: 12, right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                          color: Colors.red.shade600,
-                          borderRadius: BorderRadius.circular(20)),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.white, size: 12),
-                          SizedBox(width: 4),
-                          Text('SELESAI',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: event['gambarPath'] != null
+                    ? (event['gambarPath']!.toString().startsWith('data:image')
+                        ? Image.memory(
+                            base64Decode(event['gambarPath']!.toString().split(',').last),
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(event['gambarPath']),
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ))
+                    : Container(
+                        height: 150,
+                        width: double.infinity,
+                        color: Colors.grey.shade50,
+                        child: Icon(Icons.image_outlined, size: 40, color: Colors.grey.shade300)),
               ),
-              // Info
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(event['judul'] ?? '-', style: kTitleStyle),
-                    const SizedBox(height: 8),
-                    _infoRow(Icons.location_on_outlined, event['lokasi']),
-                    const SizedBox(height: 4),
-                    _infoRow(Icons.calendar_today_outlined, _formatTanggal(event['tanggal'] ?? '')),
-                  ],
+              Positioned(
+                top: 12, left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: Colors.green, size: 14),
+                      const SizedBox(width: 4),
+                      Text('SELESAI', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 10, color: Colors.green.shade800)),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event['judul'] ?? '-',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16, color: kPrimaryColor),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(event['lokasi'] ?? '-', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.grey.shade600))),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_month_outlined, size: 14, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(_formatTanggal(event['tanggal'] ?? ''), style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.grey.shade600))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
-
-  Widget _infoRow(IconData icon, String? value) => Row(
-        children: [
-          Icon(icon, size: 14, color: Colors.grey),
-          const SizedBox(width: 4),
-          Expanded(child: Text(value ?? '-', style: kSubtitleStyle)),
-        ],
-      );
 }

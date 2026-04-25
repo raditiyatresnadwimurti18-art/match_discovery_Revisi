@@ -29,7 +29,8 @@ class _CariKelompokPageState extends State<CariKelompokPage> {
   }
 
   Future<void> _loadUser() async {
-    final id = PreferenceHandler.getUserId();
+    final id = await PreferenceHandler.getUserId();
+    if (!mounted) return;
     setState(() => _myId = id);
     if (id != null) {
       _checkMyKelompok();
@@ -65,6 +66,8 @@ class _CariKelompokPageState extends State<CariKelompokPage> {
     );
 
     final res = await KelompokController.buatKelompok(kelompok);
+    
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (res['success']) {
@@ -88,6 +91,8 @@ class _CariKelompokPageState extends State<CariKelompokPage> {
     
     setState(() => _isLoading = true);
     final res = await KelompokController.gabungKelompok(idKelompok, _myId!);
+    
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (res['success']) {

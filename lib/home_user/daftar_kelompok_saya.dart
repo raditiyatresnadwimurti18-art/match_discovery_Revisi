@@ -23,8 +23,17 @@ class _DaftarKelompokSayaPageState extends State<DaftarKelompokSayaPage> {
   @override
   void initState() {
     super.initState();
-    _myId = PreferenceHandler.getUserId();
-    setState(() => _isLoading = false);
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    final id = await PreferenceHandler.getUserId();
+    if (mounted) {
+      setState(() {
+        _myId = id;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<LombaModel?> _getLombaData(String idLomba) async {

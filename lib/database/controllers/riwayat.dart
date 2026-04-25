@@ -182,16 +182,21 @@ class RiwayatController {
     }
   }
 
-  static Future<void> konfirmasiSelesaiManual(String userId, String lombaId) async {
+  static Future<bool> konfirmasiSelesaiManual(String userId, String lombaId) async {
     try {
+      final WriteBatch batch = _firestore.batch();
+      
       // Update status in riwayat
       QuerySnapshot riwayatSnap = await _riwayatCollection
           .where('idUser', isEqualTo: userId)
           .where('idLomba', isEqualTo: lombaId)
+          .where('status', isEqualTo: 'aktif')
           .get();
 
+      if (riwayatSnap.docs.isEmpty) return false;
+
       for (var doc in riwayatSnap.docs) {
-        await doc.reference.update({'status': 'selesai'});
+        batch.update(doc.reference, {'status': 'selesai'});
       }
 
       // Get Lomba title
@@ -207,14 +212,19 @@ class RiwayatController {
       }
 
       // Insert to riwayatSelesai
-      await _riwayatSelesaiCollection.add(RiwayatSelesaiModel(
+      DocumentReference newSelesaiRef = _riwayatSelesaiCollection.doc();
+      batch.set(newSelesaiRef, RiwayatSelesaiModel(
         idUser: userId,
         judulLomba: judulLomba ?? 'Tidak Diketahui',
         tanggalSelesai: DateTime.now().toIso8601String().split('T').first,
         jenisLomba: 'Individual',
       ).toMap());
+
+      await batch.commit();
+      return true;
     } catch (e) {
       print("Error konfirmasiSelesaiManual: $e");
+      return false;
     }
   }
 
@@ -230,31 +240,23 @@ class RiwayatController {
     }
   }
 
-  // ==================== RIWAYAT USER ====================
+  // ==================== RIWAYAT USER (REAL-TIME) ====================
 
-  static Future<List<Map<String, dynamic>>> getRiwayatUser(String userId) async {
-    try {
-      // 1. Ambil riwayat resmi dan kelompok pending secara paralel
-      final results_queries = await Future.wait([
-        _riwayatCollection.where('idUser', isEqualTo: userId).where('status', isEqualTo: 'aktif').get(),
-        _firestore.collection('kelompok').where('anggotaIds', arrayContains: userId).where('status', isEqualTo: 'mencari').get(),
-      ]);
-
-      QuerySnapshot riwayatSnap = results_queries[0];
-      QuerySnapshot kelompokSnap = results_queries[1];
-
+  static Stream<List<Map<String, dynamic>>> getRiwayatUserStream(String userId) {
+    // Memantau riwayat aktif secara real-time
+    return _riwayatCollection
+        .where('idUser', isEqualTo: userId)
+        .where('status', isEqualTo: 'aktif')
+        .snapshots()
+        .asyncMap((riwayatSnap) async {
+      
       List<Map<String, dynamic>> results = [];
-      Set<String> processedLombaIds = {};
-
-      // Gunakan Future.wait untuk ambil detail semua riwayat secara paralel
-      List<Future<void>> riwayatFutures = riwayatSnap.docs.map((doc) async {
+      
+      List<Future<void>> futures = riwayatSnap.docs.map((doc) async {
         Map<String, dynamic> riwayatData = doc.data() as Map<String, dynamic>;
         String lombaId = riwayatData['idLomba'];
-        processedLombaIds.add(lombaId);
-        
         String? idKelompok = riwayatData['idKelompok'];
         
-        // Ambil info leader dan detail lomba secara paralel
         final details = await Future.wait([
           idKelompok != null 
             ? _firestore.collection('kelompok').doc(idKelompok).get() 
@@ -265,65 +267,104 @@ class RiwayatController {
         DocumentSnapshot? kSnap = details[0] as DocumentSnapshot?;
         DocumentSnapshot? lombaSnap = details[1] as DocumentSnapshot?;
 
-        String? idLeader;
-        if (kSnap != null && kSnap.exists) {
-          idLeader = (kSnap.data() as Map<String, dynamic>?)?['idLeader'];
-        }
-
-        if (lombaSnap != null && lombaSnap.exists) {
-          Map<String, dynamic> detail = lombaSnap.data() as Map<String, dynamic>;
-          results.add({
-            'idRiwayat': doc.id,
-            'idLomba': lombaId,
-            'status': 'aktif',
-            'idKelompok': idKelompok,
-            'idLeader': idLeader,
-            'isLeader': idLeader == userId,
-            'judul': detail['judul'] ?? riwayatData['judulLomba'] ?? 'Lomba',
-            'lokasi': detail['lokasi'] ?? '-',
-            'tanggal': detail['tanggal'] ?? '-',
-            'gambarPath': detail['gambarPath'],
-            'isPendingGroup': false,
-          });
-        }
-      }).toList();
-
-      await Future.wait(riwayatFutures);
-
-      // Ambil detail semua kelompok pending secara paralel
-      List<Future<void>> kelompokFutures = kelompokSnap.docs.map((doc) async {
-        Map<String, dynamic> kData = doc.data() as Map<String, dynamic>;
-        String lombaId = kData['idLomba'];
-        
-        if (processedLombaIds.contains(lombaId)) return;
-
-        DocumentSnapshot lombaSnap = await _lombaCollection.doc(lombaId).get();
-        if (lombaSnap.exists) {
-          Map<String, dynamic> detail = lombaSnap.data() as Map<String, dynamic>;
-          results.add({
-            'idRiwayat': 'pending_${doc.id}',
-            'idLomba': lombaId,
-            'status': 'mencari',
-            'idKelompok': doc.id,
-            'idLeader': kData['idLeader'],
-            'isLeader': kData['idLeader'] == userId,
-            'judul': detail['judul'] ?? 'Lomba',
-            'lokasi': detail['lokasi'] ?? '-',
-            'tanggal': detail['tanggal'] ?? '-',
-            'gambarPath': detail['gambarPath'],
-            'isPendingGroup': true,
-          });
+        if (idKelompok != null) {
+          if (kSnap == null || !kSnap.exists) return;
+          Map<String, dynamic> kData = kSnap.data() as Map<String, dynamic>;
+          if (kData['status'] != 'penuh') return;
+          
+          String? idLeader = kData['idLeader'];
+          if (lombaSnap != null && lombaSnap.exists) {
+            Map<String, dynamic> detail = lombaSnap.data() as Map<String, dynamic>;
+            results.add({
+              'idRiwayat': doc.id,
+              'idLomba': lombaId,
+              'status': 'aktif',
+              'idKelompok': idKelompok,
+              'idLeader': idLeader,
+              'isLeader': idLeader == userId,
+              'judul': detail['judul'] ?? riwayatData['judulLomba'] ?? 'Lomba',
+              'lokasi': detail['lokasi'] ?? '-',
+              'tanggal': detail['tanggal'] ?? '-',
+              'gambarPath': detail['gambarPath'],
+            });
+          }
+        } else {
+          if (lombaSnap != null && lombaSnap.exists) {
+            Map<String, dynamic> detail = lombaSnap.data() as Map<String, dynamic>;
+            results.add({
+              'idRiwayat': doc.id,
+              'idLomba': lombaId,
+              'status': 'aktif',
+              'idKelompok': null,
+              'idLeader': null,
+              'isLeader': false,
+              'judul': detail['judul'] ?? riwayatData['judulLomba'] ?? 'Lomba',
+              'lokasi': detail['lokasi'] ?? '-',
+              'tanggal': detail['tanggal'] ?? '-',
+              'gambarPath': detail['gambarPath'],
+            });
+          }
         }
       }).toList();
 
-      await Future.wait(kelompokFutures);
-      
+      await Future.wait(futures);
       results.sort((a, b) => (a['judul'] as String).compareTo(b['judul'] as String));
       return results;
-    } catch (e) {
-      print("Error getRiwayatUser: $e");
-      return [];
-    }
+    });
+  }
+
+  // ==================== TRACK RECORD (REAL-TIME) ====================
+
+  static Stream<List<Map<String, dynamic>>> getTrackRecordUserStream(String userId) {
+    return _riwayatSelesaiCollection
+        .where('idUser', isEqualTo: userId)
+        .snapshots()
+        .map((snap) {
+      Map<String, List<String>> grouped = {};
+      for (var doc in snap.docs) {
+        String judul = doc.get('judulLomba');
+        String tanggal = doc.get('tanggalSelesai');
+        if (!grouped.containsKey(judul)) {
+          grouped[judul] = [];
+        }
+        grouped[judul]!.add(tanggal);
+      }
+
+      List<Map<String, dynamic>> results = [];
+      grouped.forEach((judul, tanggals) {
+        tanggals.sort((a, b) => b.compareTo(a));
+        results.add({
+          'judulLomba': judul,
+          'jumlahIkut': tanggals.length,
+          'terakhirIkut': tanggals.first,
+        });
+      });
+
+      results.sort((a, b) => (b['jumlahIkut'] as int).compareTo(a['jumlahIkut'] as int));
+      return results;
+    });
+  }
+
+  static Stream<int> getTotalSelesaiUserStream(String userId) {
+    return _riwayatSelesaiCollection
+        .where('idUser', isEqualTo: userId)
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+
+  static Stream<List<Map<String, dynamic>>> getTrackRecordPerLombaStream(String userId) {
+    return _riwayatSelesaiCollection
+        .where('idUser', isEqualTo: userId)
+        .snapshots()
+        .map((snap) {
+      List<Map<String, dynamic>> results = snap.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      results.sort((a, b) {
+        String tglA = a['tanggalSelesai'] ?? '';
+        String tglB = b['tanggalSelesai'] ?? '';
+        return tglB.compareTo(tglA);
+      });
+      return results;
+    });
   }
 
   // ==================== TRACK RECORD ====================

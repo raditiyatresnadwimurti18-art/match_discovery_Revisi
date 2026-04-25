@@ -82,14 +82,17 @@ class KelompokController {
       if (result['success'] == true && result['isFull'] == true) {
         List<String> anggotaIds = List<String>.from(result['anggotaIds']);
         String idLomba = result['idLomba'];
-        for (String uid in anggotaIds) {
-          await RiwayatController.ikutiLomba(RiwayatModel(
+        
+        // Optimasi: Daftarkan semua anggota secara paralel
+        await Future.wait(anggotaIds.map((uid) => RiwayatController.ikutiLomba(
+          RiwayatModel(
             idUser: uid,
             idLomba: idLomba,
             idKelompok: docRef.id,
             tanggalDaftar: DateTime.now().toIso8601String(),
-          ), reduceKuota: false);
-        }
+          ), 
+          reduceKuota: false
+        )));
       }
 
       return result;
@@ -177,14 +180,17 @@ class KelompokController {
       if (result['success'] == true && result['isFull'] == true) {
         List<String> anggotaIds = List<String>.from(result['anggotaIds']);
         String idLomba = result['idLomba'];
-        for (String uid in anggotaIds) {
-          await RiwayatController.ikutiLomba(RiwayatModel(
+        
+        // Optimasi: Daftarkan semua anggota secara paralel
+        await Future.wait(anggotaIds.map((uid) => RiwayatController.ikutiLomba(
+          RiwayatModel(
             idUser: uid,
             idLomba: idLomba,
             idKelompok: idKelompok,
             tanggalDaftar: DateTime.now().toIso8601String(),
-          ), reduceKuota: false);
-        }
+          ), 
+          reduceKuota: false
+        )));
       }
       
       return result;

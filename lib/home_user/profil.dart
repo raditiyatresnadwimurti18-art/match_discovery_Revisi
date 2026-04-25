@@ -2,8 +2,13 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:match_discovery/database/controllers/user.dart';
+import 'package:match_discovery/database/controllers/social.dart';
+import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
+import 'package:match_discovery/home_user/social/social_relation_page.dart';
+import 'package:match_discovery/home_user/social/user_list_widget.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/login/login1.dart';
@@ -24,14 +29,15 @@ class _ProfilUserState extends State<ProfilUser> {
   LoginModel? _user;
   bool _isGuest   = false;
   bool _isLoading = true;
+  String? _myId;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _fetchInitialData();
   }
 
-  Future<void> _fetchUserData() async {
+  Future<void> _fetchInitialData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
@@ -44,6 +50,7 @@ class _ProfilUserState extends State<ProfilUser> {
     }
 
     final id = await PreferenceHandler.getUserId();
+    _myId = id;
     if (id == null) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -53,7 +60,11 @@ class _ProfilUserState extends State<ProfilUser> {
     try {
       final data = await UserController.getUserById(id);
       if (!mounted) return;
-      setState(() { _user = data; _isGuest = false; _isLoading = false; });
+      setState(() { 
+        _user = data; 
+        _isGuest = false; 
+        _isLoading = false; 
+      });
     } catch (e) {
       debugPrint('Error fetchUserData: $e');
       if (!mounted) return;
@@ -76,22 +87,7 @@ class _ProfilUserState extends State<ProfilUser> {
       if (mounted) Navigator.pop(context);
 
       if (result['success'] == true) {
-        await _fetchUserData();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Foto profil berhasil diperbarui'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Gagal memperbarui foto profil.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        await _fetchInitialData();
       }
     }
   }
@@ -167,7 +163,7 @@ class _ProfilUserState extends State<ProfilUser> {
                 );
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
-                await _fetchUserData();
+                await _fetchInitialData();
                 if (!mounted) return;
                 ScaffoldMessenger.of(outerContext).showSnackBar(
                     const SnackBar(content: Text("Profil diperbarui!")));
@@ -180,254 +176,300 @@ class _ProfilUserState extends State<ProfilUser> {
     );
   }
 
-  void _showLogoutDialog() {
-    final outerContext = context;
-    showDialog(
-      context: outerContext,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 8),
-            Flexible(child: Text("Konfirmasi Keluar",
-                style: TextStyle(fontWeight: FontWeight.bold))),
-          ],
-        ),
-        content: const Text("Apakah kamu yakin ingin keluar?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext),
-              child: const Text("Batal", style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            style: kDangerButtonStyle(),
-            onPressed: () async {
-              await PreferenceHandler.clearAll();
-              if (!dialogContext.mounted) return;
-              Navigator.pop(dialogContext);
-              if (!mounted) return;
-              outerContext.pushAndRemoveAll(const Login());
-            },
-            child: const Text("Keluar"),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator(color: kPrimaryColor)));
+    if (_isGuest) return _buildGuestView();
+
     return Scaffold(
       backgroundColor: kBgColor,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: kPrimaryColor))
-          : CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: _isGuest ? _buildGuestView() : _buildUserView(),
-                ),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 280,
-      pinned: true,
-      stretch: true,
-      backgroundColor: kPrimaryColor,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-        onPressed: () => Navigator.pop(context),
+      appBar: kModernAppBar(
+        title: "Profil Saya",
       ),
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [StretchMode.zoomBackground],
-        background: Stack(
-          alignment: Alignment.center,
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
           children: [
-            // Background Gradient
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [kPrimaryColor, kPrimaryLight],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                ),
-              ),
-            ),
-            // User Profile Info
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                Hero(
-                  tag: 'profile_pic',
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: ClipOval(
-                          child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
-                              ? (_user!.profilePath!.startsWith('data:image')
-                                  ? Image.memory(base64Decode(_user!.profilePath!.split(',').last), fit: BoxFit.cover)
-                                  : Image.file(File(_user!.profilePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 80, color: kPrimaryColor)))
-                              : const Icon(Icons.person, size: 80, color: kPrimaryColor),
-                        ),
-                      ),
-                      if (!_isGuest)
-                        Positioned(
-                          bottom: 0,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(color: kSecondaryColor, shape: BoxShape.circle),
-                              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _isGuest ? 'Halo, Tamu!' : (_user?.nama ?? 'User'),
-                  style: kWhiteBoldStyle.copyWith(fontSize: 22),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
-                  child: Text(
-                    _isGuest ? "Guest Access" : "Peserta Kompetisi",
-                    style: kWhiteSubStyle.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
+            _buildProfileHeader(),
+            const SizedBox(height: 20),
+            _buildRealtimeStats(),
+            const SizedBox(height: 24),
+            _buildSectionHeader("Informasi Pribadi", Icons.person_outline_rounded),
+            const SizedBox(height: 12),
+            _buildInfoTile(Icons.alternate_email_rounded, "Email", _user?.email),
+            _buildInfoTile(Icons.phone_iphone_rounded, "Telepon", _user?.tlpon),
+            _buildInfoTile(Icons.location_on_rounded, "Asal Kota", _user?.asalKota),
+            _buildInfoTile(Icons.school_rounded, "Pendidikan", "${_user?.pendidikanTerakhir ?? '-'} - ${_user?.asalSekolah ?? '-'}"),
+            
+            const SizedBox(height: 24),
+            _buildSectionHeader("Riwayat Kompetisi", Icons.history_rounded),
+            const SizedBox(height: 12),
+            _buildRealtimeTrackRecord(),
+            
+            const SizedBox(height: 32),
+            _buildActionButtons(),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildGuestView() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          FadeInUp(
-            child: Text(
-              'Masuk untuk mengelola profil dan melihat riwayat kompetisi kamu.',
-              style: kSubtitleStyle.copyWith(fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 40),
-          BounceInUp(
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => context.pushAndRemoveAll(Login1()),
-                style: kPrimaryButtonStyle(radius: 20),
-                child: const Text('Login Sekarang'),
-              ),
-            ),
-          ),
-        ],
+  Widget _buildProfileHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-    );
-  }
-
-  Widget _buildUserView() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Informasi Pribadi", style: kTitleStyle.copyWith(fontSize: 16)),
-          const SizedBox(height: 16),
-          FadeInLeft(delay: const Duration(milliseconds: 100), child: _buildInfoTile(Icons.alternate_email_rounded, "Email", _user?.email)),
-          FadeInLeft(delay: const Duration(milliseconds: 200), child: _buildInfoTile(Icons.phone_iphone_rounded, "Telepon", _user?.tlpon)),
-          FadeInLeft(delay: const Duration(milliseconds: 300), child: _buildInfoTile(Icons.location_on_rounded, "Asal Kota", _user?.asalKota)),
-          FadeInLeft(delay: const Duration(milliseconds: 400), child: _buildInfoTile(Icons.school_rounded, "Asal Sekolah", _user?.asalSekolah)),
-          FadeInLeft(delay: const Duration(milliseconds: 500), child: _buildInfoTile(Icons.history_edu_rounded, "Pendidikan", _user?.pendidikanTerakhir)),
-          
-          const SizedBox(height: 32),
-          
-          BounceInUp(
-            delay: const Duration(milliseconds: 600),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _showEditProfileDialog,
-                icon: const Icon(Icons.edit_rounded, size: 20),
-                label: const Text("Edit Profil"),
-                style: kPrimaryButtonStyle(radius: 18),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          FadeInUp(
-            delay: const Duration(milliseconds: 700),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _showLogoutDialog,
-                icon: const Icon(Icons.logout_rounded, size: 20),
-                label: const Text("Keluar"),
-                style: kSecondaryButtonStyle(radius: 18).copyWith(
-                  foregroundColor: MaterialStateProperty.all(Colors.red),
-                  side: MaterialStateProperty.all(const BorderSide(color: Colors.red, width: 1.5)),
+          Stack(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(color: kPrimaryColor, shape: BoxShape.circle),
+                child: ClipOval(
+                  child: Container(
+                    color: Colors.white,
+                    child: _user?.profilePath != null && _user!.profilePath!.isNotEmpty
+                        ? (_user!.profilePath!.startsWith('data:image')
+                            ? Image.memory(base64Decode(_user!.profilePath!.split(',').last), fit: BoxFit.cover)
+                            : Image.file(File(_user!.profilePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50, color: kPrimaryColor)))
+                        : const Icon(Icons.person, size: 50, color: kPrimaryColor),
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(color: kSecondaryColor, shape: BoxShape.circle),
+                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 16),
+          Text(
+            _user?.nama ?? 'User',
+            style: GoogleFonts.plusJakartaSans(color: kPrimaryColor, fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          Text(
+            _user?.email ?? '',
+            style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600, fontSize: 13),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoTile(IconData icon, String title, String? value) {
+  Widget _buildRealtimeStats() {
+    return StreamBuilder<int>(
+      stream: RiwayatController.getTotalSelesaiUserStream(_myId!),
+      builder: (context, lombaSnap) {
+        return StreamBuilder<int>(
+          stream: SocialController.getFollowersCountStream(_myId!),
+          builder: (context, followersSnap) {
+            return StreamBuilder<int>(
+              stream: SocialController.getFollowingCountStream(_myId!),
+              builder: (context, followingSnap) {
+                return Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.grey.shade100),
+                  ),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem("Lomba", (lombaSnap.data ?? 0).toString(), null),
+                        _buildStatDivider(),
+                        _buildStatItem("Pengikut", (followersSnap.data ?? 0).toString(), 0),
+                        _buildStatDivider(),
+                        _buildStatItem("Mengikuti", (followingSnap.data ?? 0).toString(), 1),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, int? tabIndex) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: tabIndex == null ? null : () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SocialRelationPage(userId: _user!.id!, initialIndex: tabIndex),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(value, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18, color: kPrimaryColor)),
+                Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(height: 30, width: 1, color: Colors.grey.shade200);
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: kPrimaryColor),
+        const SizedBox(width: 8),
+        Text(title, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15)),
+      ],
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String label, String? value) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: kCardDecoration(radius: 18),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: kPrimaryColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: kPrimaryColor, size: 22),
-          ),
-          const SizedBox(width: 16),
+          Icon(icon, size: 18, color: Colors.grey.shade400),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: kSubtitleStyle.copyWith(fontSize: 11, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 2),
-                Text(
-                  (value == null || value.isEmpty) ? "-" : value,
-                  style: kBodyStyle.copyWith(fontWeight: FontWeight.w600, fontSize: 15),
-                ),
+                Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                Text(value ?? '-', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRealtimeTrackRecord() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: RiwayatController.getTrackRecordUserStream(_myId!),
+      builder: (context, snapshot) {
+        final trackRecord = snapshot.data ?? [];
+        if (trackRecord.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade100)),
+            child: const Center(child: Text("Belum ada riwayat kompetisi", style: TextStyle(fontSize: 12, color: Colors.grey))),
+          );
+        }
+        return Column(
+          children: trackRecord.take(3).map((item) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade100)),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: kPrimaryColor.withOpacity(0.05), shape: BoxShape.circle),
+                  child: const Icon(Icons.emoji_events_rounded, color: Colors.orange, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item['judulLomba'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text("Diikuti ${item['jumlahIkut']} kali", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                Text(item['terakhirIkut'], style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          )).toList(),
+        );
+      }
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _showEditProfileDialog,
+            icon: const Icon(Icons.edit_note_rounded, size: 18),
+            label: const Text("Edit Profil & Pengaturan"),
+            style: kPrimaryButtonStyle(radius: 16),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton.icon(
+            onPressed: () async {
+              await PreferenceHandler.clearAll();
+              if (!mounted) return;
+              context.pushAndRemoveAll(const Login());
+            },
+            icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.red),
+            label: const Text("Keluar Akun", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGuestView() {
+    return Scaffold(
+      appBar: kModernAppBar(title: "Profil"),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.account_circle_outlined, size: 80, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text("Login untuk melihat profil lengkap", style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.pushAndRemoveAll(const Login1()),
+              style: kPrimaryButtonStyle(radius: 12),
+              child: const Text("Login Sekarang"),
+            ),
+          ],
+        ),
       ),
     );
   }

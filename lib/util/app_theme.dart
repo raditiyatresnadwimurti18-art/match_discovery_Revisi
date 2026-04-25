@@ -142,6 +142,7 @@ AppBar kModernAppBar({
   centerTitle: centerTitle,
   automaticallyImplyLeading: automaticallyImplyLeading,
   backgroundColor: kPrimaryColor,
+  iconTheme: const IconThemeData(color: Colors.white), // Panah kembali jadi putih
   elevation: 0,
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(bottom: Radius.circular(0)),

@@ -47,6 +47,7 @@ class _DetailKelompokPageState extends State<DetailKelompokPage> {
         widget.idKelompok,
         widget.lomba.id!,
       );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Berhasil mengonfirmasi selesai untuk seluruh anggota"),
@@ -55,11 +56,12 @@ class _DetailKelompokPageState extends State<DetailKelompokPage> {
       );
       Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Gagal: $e"), backgroundColor: Colors.red),
       );
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
