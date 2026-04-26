@@ -158,4 +158,48 @@ class SocialController {
         .snapshots()
         .map((snap) => snap.docs.length);
   }
+
+  // Get mutual following (Friends who follow back)
+  static Stream<List<LoginModel>> getMutualFriendsStream(String userId) {
+    return _relationshipsCollection
+        .where('fromId', isEqualTo: userId)
+        .where('status', isEqualTo: 'following')
+        .snapshots()
+        .asyncMap((followingSnap) async {
+      List<String> followingIds = followingSnap.docs.map((doc) => doc['toId'] as String).toList();
+      if (followingIds.isEmpty) return [];
+
+      List<String> mutualIds = [];
+      
+      // Check in chunks of 30
+      for (var i = 0; i < followingIds.length; i += 30) {
+        var end = (i + 30 < followingIds.length) ? i + 30 : followingIds.length;
+        var chunk = followingIds.sublist(i, end);
+        
+        QuerySnapshot followersSnap = await _relationshipsCollection
+            .where('fromId', whereIn: chunk)
+            .where('toId', isEqualTo: userId)
+            .where('status', isEqualTo: 'following')
+            .get();
+            
+        mutualIds.addAll(followersSnap.docs.map((doc) => doc['fromId'] as String));
+      }
+
+      if (mutualIds.isEmpty) return [];
+
+      // Ambil data user
+      QuerySnapshot userSnap = await _usersCollection
+          .where(FieldPath.documentId, whereIn: mutualIds.take(30).toList())
+          .get();
+          
+      return userSnap.docs.map((doc) => LoginModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id)).toList();
+    });
+  }
+
+  // Check if mutual following
+  static Future<bool> isMutual(String userId1, String userId2) async {
+    bool iFollow = await isFollowing(userId1, userId2);
+    bool theyFollow = await isFollowing(userId2, userId1);
+    return iFollow && theyFollow;
+  }
 }

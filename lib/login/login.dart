@@ -1,7 +1,6 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/auth.dart';
-import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_admin/home.dart';
 import 'package:match_discovery/login/login1.dart';

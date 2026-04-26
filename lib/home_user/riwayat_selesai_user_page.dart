@@ -23,7 +23,7 @@ class _RiwayatSelesaiUserPageState extends State<RiwayatSelesaiUserPage> {
   }
 
   Future<void> _initId() async {
-    _myId = await PreferenceHandler.getUserId();
+    _myId = PreferenceHandler.getUserId();
     if (mounted) setState(() => _initializing = false);
   }
 

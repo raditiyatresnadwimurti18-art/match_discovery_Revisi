@@ -6,7 +6,6 @@ import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_user/home_user.dart';
 import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/login/reggister.dart';
-import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
 import 'package:match_discovery/util/decoration_form.dart';
 

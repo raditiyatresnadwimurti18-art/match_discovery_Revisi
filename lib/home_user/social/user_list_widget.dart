@@ -28,7 +28,7 @@ class _UserListWidgetState extends State<UserListWidget> {
   }
 
   Future<void> _initUserId() async {
-    _currentUserId = await PreferenceHandler.getUserId();
+    _currentUserId = PreferenceHandler.getUserId();
     if (mounted) setState(() {});
   }
 

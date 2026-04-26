@@ -135,6 +135,17 @@ class UserController {
     }
   }
 
+  static Future<void> updateOnlineStatus(String userId, bool isOnline) async {
+    try {
+      await _usersCollection.doc(userId).update({
+        'isOnline': isOnline,
+        'lastActive': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      print("Error updateOnlineStatus: $e");
+    }
+  }
+
   // ==================== DELETE ====================
 
   static Future<bool> deleteUser(String id) async {

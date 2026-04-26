@@ -87,9 +87,9 @@ class _Widget2State extends State<Widget2> {
   void _showForm(String? id) {
     if (id != null) {
       final e = _allLomba.firstWhere((e) => e.id == id);
-      _judulCtrl.text = e.judul ?? '';
-      _lokasiCtrl.text = e.lokasi ?? '';
-      _deskripsiCtrl.text = e.deskripsi ?? '';
+      _judulCtrl.text = e.judul;
+      _lokasiCtrl.text = e.lokasi;
+      _deskripsiCtrl.text = e.deskripsi;
       _kuotaCtrl.text = e.kuota.toString();
       
       // Validasi agar nilai dari database ada di dalam list dropdown
@@ -97,7 +97,7 @@ class _Widget2State extends State<Widget2> {
       _selectedJenisLomba = _listJenisLomba.contains(e.jenisLomba) ? e.jenisLomba : _listJenisLomba.first;
       
       _jumlahAnggotaCtrl.text = e.jumlahAnggota?.toString() ?? '';
-      _tanggalCtrl.text = e.tanggal ?? '';
+      _tanggalCtrl.text = e.tanggal;
       _imagePath = e.gambarPath;
     } else {
       _judulCtrl.clear();
@@ -446,7 +446,7 @@ class _Widget2State extends State<Widget2> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            lomba.judul ?? '-',
+                                            lomba.judul,
                                             style: kTitleStyle.copyWith(fontSize: 15),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -457,7 +457,7 @@ class _Widget2State extends State<Widget2> {
                                               const Icon(Icons.location_on_rounded, size: 14, color: kSecondaryColor),
                                               const SizedBox(width: 4),
                                               Expanded(
-                                                child: Text(lomba.lokasi ?? '-', style: kSubtitleStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                child: Text(lomba.lokasi, style: kSubtitleStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
                                               ),
                                             ],
                                           ),

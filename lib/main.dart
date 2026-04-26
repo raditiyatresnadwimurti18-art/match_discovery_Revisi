@@ -8,6 +8,7 @@ import 'package:match_discovery/database/notification_service.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/firebase_options.dart';
 import 'package:match_discovery/models/admin_model.dart';
+import 'package:match_discovery/database/controllers/user.dart';
 import 'package:match_discovery/view/splash.dart';
 
 @pragma('vm:entry-point')
@@ -67,8 +68,54 @@ Future<void> setupSuperAdmin() async {
   }
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _setOnline(true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _setOnline(true);
+    } else {
+      _setOnline(false);
+    }
+  }
+
+  void _setOnline(bool isOnline) async {
+    try {
+      final role = PreferenceHandler.getRole();
+      if (role == 'admin' || role == 'super') {
+        final id = PreferenceHandler.getAdminId();
+        if (id != null) {
+          await AdminController.updateOnlineStatus(id, isOnline);
+        }
+      } else {
+        final id = PreferenceHandler.getUserId();
+        if (id != null) {
+          await UserController.updateOnlineStatus(id, isOnline);
+        }
+      }
+    } catch (e) {
+      debugPrint("Main: Gagal update status online: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,3 +125,4 @@ class MainApp extends StatelessWidget {
     );
   }
 }
+

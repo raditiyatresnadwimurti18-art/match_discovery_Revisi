@@ -12,6 +12,8 @@ class LoginModel {
   String? asalSekolah;
   String? tanggal_daftar;
   String? fcmToken;
+  bool? isOnline;
+  String? lastActive;
 
   LoginModel({
     this.id,
@@ -26,6 +28,8 @@ class LoginModel {
     this.asalSekolah,
     this.tanggal_daftar,
     this.fcmToken,
+    this.isOnline = false,
+    this.lastActive,
   });
 
   // Fungsi untuk mengubah data dari Database (Map) ke Object Flutter
@@ -43,6 +47,8 @@ class LoginModel {
       asalSekolah: map['asalSekolah'],
       tanggal_daftar: map['tanggal_daftar'],
       fcmToken: map['fcmToken'],
+      isOnline: map['isOnline'] ?? false,
+      lastActive: map['lastActive'],
     );
   }
 
@@ -61,6 +67,8 @@ class LoginModel {
       'asalSekolah': asalSekolah,
       'tanggal_daftar': tanggal_daftar,
       'fcmToken': fcmToken,
+      'isOnline': isOnline,
+      'lastActive': lastActive,
     };
   }
 }

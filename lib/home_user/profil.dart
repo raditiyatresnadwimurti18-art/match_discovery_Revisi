@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:match_discovery/database/controllers/user.dart';
@@ -8,7 +7,6 @@ import 'package:match_discovery/database/controllers/social.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/home_user/social/social_relation_page.dart';
-import 'package:match_discovery/home_user/social/user_list_widget.dart';
 import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/login/login1.dart';
@@ -41,7 +39,7 @@ class _ProfilUserState extends State<ProfilUser> {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final role = await PreferenceHandler.getRole();
+    final role = PreferenceHandler.getRole();
 
     if (role == 'guest' || role == null) {
       if (!mounted) return;
@@ -49,7 +47,7 @@ class _ProfilUserState extends State<ProfilUser> {
       return;
     }
 
-    final id = await PreferenceHandler.getUserId();
+    final id = PreferenceHandler.getUserId();
     _myId = id;
     if (id == null) {
       if (!mounted) return;

@@ -33,11 +33,19 @@ class RiwayatController {
         DocumentReference lombaRef = _lombaCollection.doc(riwayat.idLomba);
         DocumentSnapshot lombaSnap = await transaction.get(lombaRef);
 
+        bool isFromRiwayatEvent = false;
         if (!lombaSnap.exists) {
-          return {
-            'success': false,
-            'message': 'Lomba tidak ditemukan atau sudah ditutup.',
-          };
+          // Cek di riwayatEvent (Lomba yang sudah penuh)
+          DocumentReference eventRef = _riwayatEventCollection.doc(riwayat.idLomba);
+          lombaSnap = await transaction.get(eventRef);
+          isFromRiwayatEvent = true;
+          
+          if (!lombaSnap.exists) {
+            return {
+              'success': false,
+              'message': 'Lomba tidak ditemukan atau sudah ditutup.',
+            };
+          }
         }
 
         Map<String, dynamic> lombaData = lombaSnap.data() as Map<String, dynamic>;
@@ -56,9 +64,9 @@ class RiwayatController {
         String token = "TKN-${riwayatDoc.id.substring(0, 8).toUpperCase()}";
         String judulLomba = lombaData['judul'] ?? 'Lomba';
 
-        // 4. Kurangi Kuota (Hanya jika reduceKuota true)
+        // 4. Kurangi Kuota (Hanya jika reduceKuota true dan bukan dari riwayatEvent)
         int newKuota = currentKuota;
-        if (reduceKuota) {
+        if (reduceKuota && !isFromRiwayatEvent) {
           if (currentKuota <= 0) {
             return {
               'success': false,

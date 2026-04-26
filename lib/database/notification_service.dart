@@ -90,8 +90,8 @@ class NotificationService {
               body: data['body'] ?? '',
               payload: jsonEncode(serializableData),
             );
-            // Tandai sudah dibaca agar tidak muncul lagi saat app restart
-            change.doc.reference.update({'isRead': true});
+            // HAPUS dokumen agar Firestore tidak penuh
+            change.doc.reference.delete();
           }
         }
       }

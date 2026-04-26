@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/extension/navigator.dart';
-import 'package:match_discovery/home_admin/daftar_admin-user.dart';
+import 'package:match_discovery/home_admin/daftar_admin_user.dart';
 import 'package:match_discovery/login/login.dart';
 import 'package:match_discovery/models/admin_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
@@ -33,7 +33,7 @@ class _ProfilAdminState extends State<ProfilAdmin> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     
-    String? id = await PreferenceHandler.getAdminId();
+    String? id = PreferenceHandler.getAdminId();
     if (id == null) {
        if (mounted) setState(() => _isLoading = false);
        return;

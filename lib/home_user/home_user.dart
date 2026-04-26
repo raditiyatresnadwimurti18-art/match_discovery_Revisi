@@ -1,16 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/controllers/user.dart';
 import 'package:match_discovery/database/notification_service.dart';
 import 'package:match_discovery/database/preferences.dart';
-import 'package:match_discovery/extension/navigator.dart';
 import 'package:match_discovery/home_user/profil.dart';
 import 'package:match_discovery/home_user/isi_home_user.dart';
 import 'package:match_discovery/home_user/daftar_kelompok_saya.dart';
 import 'package:match_discovery/home_user/social/social_hub.dart';
 import 'package:match_discovery/home_user/activity_hub.dart';
-import 'package:match_discovery/login/login1.dart';
-import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
 
 class HomeUser extends StatefulWidget {
@@ -39,14 +34,14 @@ class _HomeUserState extends State<HomeUser> {
   }
 
   Future<void> _fetchUserData() async {
-    final role = await PreferenceHandler.getRole();
+    final role = PreferenceHandler.getRole();
     if (role == 'guest' || role == null) {
       if (!mounted) return;
       setState(() => _pageLoaded = true);
       return;
     }
 
-    final id = await PreferenceHandler.getUserId();
+    final id = PreferenceHandler.getUserId();
     if (id == null) {
       if (!mounted) return;
       setState(() => _pageLoaded = true);

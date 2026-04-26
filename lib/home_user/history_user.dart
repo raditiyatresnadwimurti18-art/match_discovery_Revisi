@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/preferences.dart';
@@ -25,7 +23,7 @@ class _HistoryUserState extends State<HistoryUser> {
   }
 
   Future<void> _initId() async {
-    _myId = await PreferenceHandler.getUserId();
+    _myId = PreferenceHandler.getUserId();
     if (mounted) setState(() => _initializing = false);
   }
 

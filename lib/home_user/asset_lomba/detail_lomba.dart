@@ -28,7 +28,7 @@ class DetailLomba extends StatelessWidget {
   }
 
   Future<void> _daftarLomba(BuildContext context, {String? idKelompok}) async {
-    final userId = await PreferenceHandler.getUserId();
+    final userId = PreferenceHandler.getUserId();
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Silakan login terlebih dahulu untuk mendaftar.")),

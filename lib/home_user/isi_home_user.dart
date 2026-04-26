@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:match_discovery/home_user/asset_lomba/daftar_lomba.dart';
+import 'package:match_discovery/home_user/chat_list_page.dart';
 import 'package:match_discovery/home_user/promo_slider.dart';
 import 'package:match_discovery/util/app_theme.dart';
 
@@ -29,8 +30,13 @@ class IsiHomeUser extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_none_rounded, color: kPrimaryColor, size: 26),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChatListPage()),
+              );
+            },
+            icon: const Icon(Icons.chat_bubble_outline_rounded, color: kPrimaryColor, size: 24),
           ),
           const SizedBox(width: 8),
         ],

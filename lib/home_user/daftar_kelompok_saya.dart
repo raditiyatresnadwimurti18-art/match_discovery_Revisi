@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:match_discovery/database/controllers/kelompok.dart';
 import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/home_user/detail_kelompok.dart';
 import 'package:match_discovery/models/kelompok_model.dart';
@@ -27,7 +25,7 @@ class _DaftarKelompokSayaPageState extends State<DaftarKelompokSayaPage> {
   }
 
   Future<void> _initData() async {
-    final id = await PreferenceHandler.getUserId();
+    final id = PreferenceHandler.getUserId();
     if (mounted) {
       setState(() {
         _myId = id;

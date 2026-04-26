@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/riwayat.dart';
 import 'package:match_discovery/database/controllers/social.dart';
 import 'package:match_discovery/database/preferences.dart';
+import 'package:match_discovery/database/chat_service.dart';
+import 'package:match_discovery/home_user/chat_screen.dart';
 import 'package:match_discovery/home_user/social/followers_list_widget.dart';
 import 'package:match_discovery/models/login_model.dart';
 import 'package:match_discovery/util/app_theme.dart';
@@ -31,7 +33,7 @@ class _UserProfileViewState extends State<UserProfileView> {
   }
 
   Future<void> _loadData() async {
-    _currentUserId = await PreferenceHandler.getUserId();
+    _currentUserId = PreferenceHandler.getUserId();
     if (_currentUserId != null) {
       _isFollowing = await SocialController.isFollowing(_currentUserId!, widget.user.id!);
     }
@@ -148,18 +150,53 @@ class _UserProfileViewState extends State<UserProfileView> {
             if (_currentUserId != null && _currentUserId != widget.user.id)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isFollowing ? Colors.red.shade400 : kPrimaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isFollowing ? Colors.red.shade400 : kPrimaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _isLoading ? null : _handleAction,
+                        icon: Icon(_isFollowing ? Icons.person_remove_rounded : Icons.person_add_rounded),
+                        label: Text(_isFollowing ? 'Batal Mengikuti' : 'Ikuti'),
+                      ),
                     ),
-                    onPressed: _isLoading ? null : _handleAction,
-                    icon: Icon(_isFollowing ? Icons.person_remove_rounded : Icons.person_add_rounded),
-                    label: Text(_isFollowing ? 'Batal Mengikuti' : 'Ikuti'),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: kPrimaryColor),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          setState(() => _isLoading = true);
+                          String roomId = await ChatService().getOrCreateChatRoom(_currentUserId!, widget.user.id!);
+                          setState(() => _isLoading = false);
+                          
+                          if (mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  roomId: roomId,
+                                  currentUserId: _currentUserId!,
+                                  peerName: widget.user.nama ?? 'User',
+                                  peerProfileUrl: widget.user.profilePath,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Icon(Icons.mail_outline_rounded, color: kPrimaryColor),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               

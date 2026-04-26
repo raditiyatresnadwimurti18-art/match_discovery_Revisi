@@ -27,7 +27,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
   }
 
   Future<void> _initUserId() async {
-    _currentUserId = await PreferenceHandler.getUserId();
+    _currentUserId = PreferenceHandler.getUserId();
     if (mounted) {
       setState(() => _isLoading = false);
     }

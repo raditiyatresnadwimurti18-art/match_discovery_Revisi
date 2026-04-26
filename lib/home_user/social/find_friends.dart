@@ -29,7 +29,7 @@ class _FindFriendsPageState extends State<FindFriendsPage> {
   }
 
   Future<void> _initUserId() async {
-    _currentUserId = await PreferenceHandler.getUserId();
+    _currentUserId = PreferenceHandler.getUserId();
   }
 
   Future<void> _performSearch(String query) async {

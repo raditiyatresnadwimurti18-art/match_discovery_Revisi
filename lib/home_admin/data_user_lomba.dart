@@ -268,9 +268,6 @@ class _DataUserLombaState extends State<DataUserLomba> {
                     final user = e.value;
                     final namaUser = (user['nama_user'] as String?) ?? '-';
                     final telepon = (user['telepon_user'] as String?) ?? '-';
-                    final tanggal =
-                        (user['tanggalDaftar'] as String?)?.split(' ').first ??
-                        '-';
                     final isLast = i == uniquePendaftar.length - 1;
                     final jenis = user['jenis'] ?? 'Individual';
                     final statusTim = user['status_tim'] ?? 'Terdaftar';

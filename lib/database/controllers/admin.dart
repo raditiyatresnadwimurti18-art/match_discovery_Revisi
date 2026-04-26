@@ -205,6 +205,18 @@ class AdminController {
     }
   }
 
+  static Future<void> updateOnlineStatus(String adminId, bool isOnline) async {
+    if (adminId == 'super_admin_local') return;
+    try {
+      await _adminsCollection.doc(adminId).update({
+        'isOnline': isOnline,
+        'lastActive': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      print("Error updateOnlineStatus Admin: $e");
+    }
+  }
+
   // ==================== DELETE ====================
 
   static Future<bool> deleteAdmin(String id) async {

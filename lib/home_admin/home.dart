@@ -51,7 +51,7 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _fetchAdminData() async {
-    final id = await PreferenceHandler.getAdminId();
+    final id = PreferenceHandler.getAdminId();
     if (id == null) return;
     try {
       final data = await AdminController.getAdminById(id);

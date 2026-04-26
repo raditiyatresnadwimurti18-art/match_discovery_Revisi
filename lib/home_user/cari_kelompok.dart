@@ -29,7 +29,7 @@ class _CariKelompokPageState extends State<CariKelompokPage> {
   }
 
   Future<void> _loadUser() async {
-    final id = await PreferenceHandler.getUserId();
+    final id = PreferenceHandler.getUserId();
     if (!mounted) return;
     setState(() => _myId = id);
     if (id != null) {

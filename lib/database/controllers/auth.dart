@@ -271,7 +271,7 @@ await _db.collection('admins').doc(uid).set({
       }
 
       // C. Jika email tetap tidak ditemukan, gunakan default (format lama)
-      targetEmail ??= "${username}@admin.com";
+      targetEmail ??= "$username@admin.com";
 
       print("AuthController: Mencoba SignIn Auth dengan Email: $targetEmail");
       UserCredential credential = await _auth.signInWithEmailAndPassword(

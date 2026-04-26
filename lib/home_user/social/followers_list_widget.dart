@@ -26,7 +26,7 @@ class _FollowersListWidgetState extends State<FollowersListWidget> {
   }
 
   Future<void> _initUserId() async {
-    _currentUserId = await PreferenceHandler.getUserId();
+    _currentUserId = PreferenceHandler.getUserId();
     if (mounted) setState(() {});
   }
 
