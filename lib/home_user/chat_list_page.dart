@@ -24,7 +24,7 @@ class _ChatListPageState extends State<ChatListPage> {
   String? _currentUserId;
   String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Cache untuk menyimpan data user agar tidak fetch berulang kali di ListView
   final Map<String, LoginModel> _userCache = {};
 
@@ -55,7 +55,11 @@ class _ChatListPageState extends State<ChatListPage> {
     final localTime = dateTime.toLocal();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
-    final dateToCheck = DateTime(localTime.year, localTime.month, localTime.day);
+    final dateToCheck = DateTime(
+      localTime.year,
+      localTime.month,
+      localTime.day,
+    );
 
     if (dateToCheck == today) {
       return DateFormat('HH:mm').format(localTime);
@@ -68,7 +72,7 @@ class _ChatListPageState extends State<ChatListPage> {
 
   Future<LoginModel?> _getUserWithCache(String userId) async {
     if (_userCache.containsKey(userId)) return _userCache[userId];
-    
+
     final user = await UserController.getUserById(userId);
     if (user != null) {
       _userCache[userId] = user;
@@ -121,7 +125,8 @@ class _ChatListPageState extends State<ChatListPage> {
               ),
               child: TextField(
                 controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                onChanged: (val) =>
+                    setState(() => _searchQuery = val.toLowerCase()),
                 decoration: InputDecoration(
                   icon: const Icon(Icons.search, color: Colors.grey),
                   hintText: 'Cari chat...',
@@ -177,11 +182,14 @@ class _ChatListPageState extends State<ChatListPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     'Belum ada teman baru.',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.grey),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
                   ),
                 );
               }
-              
+
               final friends = snapshot.data!;
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -190,10 +198,13 @@ class _ChatListPageState extends State<ChatListPage> {
                 itemBuilder: (context, index) {
                   final friend = friends[index];
                   final bytes = _getProfileBytes(friend.profilePath);
-                  
+
                   return GestureDetector(
                     onTap: () async {
-                      String roomId = await _chatService.getOrCreateChatRoom(_currentUserId!, friend.id!);
+                      String roomId = await _chatService.getOrCreateChatRoom(
+                        _currentUserId!,
+                        friend.id!,
+                      );
                       if (mounted) {
                         Navigator.push(
                           context,
@@ -218,10 +229,18 @@ class _ChatListPageState extends State<ChatListPage> {
                               CircleAvatar(
                                 radius: 28,
                                 backgroundColor: kPrimaryColor.withOpacity(0.1),
-                                backgroundImage: bytes != null ? MemoryImage(bytes) : null,
-                                child: bytes == null 
-                                  ? Text(friend.nama?[0].toUpperCase() ?? 'U', style: const TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold))
-                                  : null,
+                                backgroundImage: bytes != null
+                                    ? MemoryImage(bytes)
+                                    : null,
+                                child: bytes == null
+                                    ? Text(
+                                        friend.nama?[0].toUpperCase() ?? 'U',
+                                        style: const TextStyle(
+                                          color: kPrimaryColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    : null,
                               ),
                               if (friend.isOnline ?? false)
                                 Positioned(
@@ -233,7 +252,10 @@ class _ChatListPageState extends State<ChatListPage> {
                                     decoration: BoxDecoration(
                                       color: kSuccessColor,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -244,7 +266,10 @@ class _ChatListPageState extends State<ChatListPage> {
                             friend.nama?.split(' ')[0] ?? 'User',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -263,11 +288,14 @@ class _ChatListPageState extends State<ChatListPage> {
     return StreamBuilder<List<ChatRoom>>(
       stream: _chatService.getChatRooms(_currentUserId!),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.all(40.0),
-            child: CircularProgressIndicator(color: kPrimaryColor),
-          ));
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(color: kPrimaryColor),
+            ),
+          );
         }
 
         final rooms = snapshot.data ?? [];
@@ -277,9 +305,16 @@ class _ChatListPageState extends State<ChatListPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-                Icon(Icons.chat_bubble_outline_rounded, size: 60, color: Colors.grey[300]),
+                Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 60,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 16),
-                Text('Belum ada obrolan', style: GoogleFonts.plusJakartaSans(color: Colors.grey[500])),
+                Text(
+                  'Belum ada obrolan',
+                  style: GoogleFonts.plusJakartaSans(color: Colors.grey[500]),
+                ),
               ],
             ),
           );
@@ -292,28 +327,33 @@ class _ChatListPageState extends State<ChatListPage> {
           itemCount: rooms.length,
           itemBuilder: (context, index) {
             final room = rooms[index];
-            final peerId = room.members.firstWhere((id) => id != _currentUserId, orElse: () => 'Admin');
-            
+            final peerId = room.members.firstWhere(
+              (id) => id != _currentUserId,
+              orElse: () => 'Admin',
+            );
+
             return FutureBuilder<LoginModel?>(
               future: _getUserWithCache(peerId),
               builder: (context, userSnap) {
                 final peer = userSnap.data;
                 final displayName = peer?.nama ?? 'User $peerId';
-                
-                if (_searchQuery.isNotEmpty && !displayName.toLowerCase().contains(_searchQuery)) {
+
+                if (_searchQuery.isNotEmpty &&
+                    !displayName.toLowerCase().contains(_searchQuery)) {
                   return const SizedBox.shrink();
                 }
 
                 final bytes = _getProfileBytes(peer?.profilePath);
                 final bool isMe = room.lastSenderId == _currentUserId;
-                
+
                 // Logic centang biru di list
                 bool isReadByPeer = false;
                 if (isMe) {
                   final peerReadTime = room.readStatus[peerId];
                   if (peerReadTime != null) {
-                    isReadByPeer = room.lastTime.isBefore(peerReadTime) || 
-                                  room.lastTime.isAtSameMomentAs(peerReadTime);
+                    isReadByPeer =
+                        room.lastTime.isBefore(peerReadTime) ||
+                        room.lastTime.isAtSameMomentAs(peerReadTime);
                   }
                 }
 
@@ -336,10 +376,18 @@ class _ChatListPageState extends State<ChatListPage> {
                       CircleAvatar(
                         radius: 26,
                         backgroundColor: Colors.grey[200],
-                        backgroundImage: bytes != null ? MemoryImage(bytes) : null,
-                        child: bytes == null 
-                          ? Text(displayName[0].toUpperCase(), style: const TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold))
-                          : null,
+                        backgroundImage: bytes != null
+                            ? MemoryImage(bytes)
+                            : null,
+                        child: bytes == null
+                            ? Text(
+                                displayName[0].toUpperCase(),
+                                style: const TextStyle(
+                                  color: kPrimaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
                       ),
                       if (peer?.isOnline ?? false)
                         Positioned(
@@ -365,7 +413,10 @@ class _ChatListPageState extends State<ChatListPage> {
                           displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       Text(
@@ -379,7 +430,12 @@ class _ChatListPageState extends State<ChatListPage> {
                   ),
                   subtitle: Row(
                     children: [
-                      if (isMe) Icon(Icons.done_all_rounded, size: 16, color: isReadByPeer ? Colors.blue : Colors.grey),
+                      if (isMe)
+                        Icon(
+                          Icons.done_all_rounded,
+                          size: 16,
+                          color: isReadByPeer ? Colors.blue : Colors.grey,
+                        ),
                       if (isMe) const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -393,7 +449,10 @@ class _ChatListPageState extends State<ChatListPage> {
                         ),
                       ),
                       StreamBuilder<int>(
-                        stream: _chatService.getUnreadCount(room.id, _currentUserId!),
+                        stream: _chatService.getUnreadCount(
+                          room.id,
+                          _currentUserId!,
+                        ),
                         builder: (context, countSnap) {
                           final count = countSnap.data ?? 0;
                           if (count == 0) return const SizedBox.shrink();
@@ -406,7 +465,11 @@ class _ChatListPageState extends State<ChatListPage> {
                             ),
                             child: Text(
                               '$count',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           );
                         },
@@ -414,7 +477,7 @@ class _ChatListPageState extends State<ChatListPage> {
                     ],
                   ),
                 );
-              }
+              },
             );
           },
         );
@@ -422,4 +485,3 @@ class _ChatListPageState extends State<ChatListPage> {
     );
   }
 }
-
