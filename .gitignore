@@ -47,3 +47,4 @@ release-key.jks
 
 # Custom environment files
 lib/config/env.dart
+.vercel
