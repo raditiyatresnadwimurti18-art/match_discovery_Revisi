@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:match_discovery/database/controllers/admin.dart';
@@ -13,6 +14,7 @@ import 'package:match_discovery/view/splash.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (kIsWeb) return;
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.init(); // Pastikan plugin notifikasi lokal diinisialisasi
   print("Handling a background message: ${message.messageId}");
@@ -26,18 +28,22 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   
   // Inisialisasi Notifikasi
-  await NotificationService.init();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  if (!kIsWeb) {
+    await NotificationService.init();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
 
   await PreferenceHandler.init(); // Inisialisasi preferensi
 
   // Aktifkan listener jika sudah login
-  if (PreferenceHandler.getIsLogin() == true) {
+  if (!kIsWeb && PreferenceHandler.getIsLogin() == true) {
     NotificationService.subscribeToLombaTopic();
     NotificationService.listenToNewLomba();
   }
 
-  await setupSuperAdmin();
+  if (!kIsWeb) {
+    await setupSuperAdmin();
+  }
   runApp(const MainApp());
 }
 

@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class StorageService {
   /// Mengubah gambar menjadi String Base64 (Teks) agar bisa disimpan di Firestore.
   /// Ini adalah "Cara Lain" yang 100% berhasil tanpa perlu Firebase Storage.
   static Future<String?> uploadImage(String filePath, String folder) async {
+    if (kIsWeb) return null; // Simplified for Web Demo
     try {
       File file = File(filePath);
       if (!file.existsSync()) {

@@ -9,6 +9,9 @@ class LocalDbService {
   static Database? _database;
 
   Future<Database> get database async {
+    if (kIsWeb) {
+      throw UnsupportedError('SQLite is not supported on Web.');
+    }
     if (_database != null) return _database!;
     _database = await _initDb();
     return _database!;
@@ -62,6 +65,7 @@ class LocalDbService {
   // === Chat Room Operations ===
 
   Future<void> saveChatRoom(ChatRoom room) async {
+    if (kIsWeb) return;
     final db = await database;
     List<String> sortedMembers = List.from(room.members)..sort();
 
@@ -85,6 +89,7 @@ class LocalDbService {
   }
 
   Future<void> mergeDuplicateRooms() async {
+    if (kIsWeb) return;
     final db = await database;
     try {
       // Cari group members yang punya lebih dari 1 room_id
@@ -130,6 +135,7 @@ class LocalDbService {
   }
 
   Future<List<ChatRoom>> getChatRooms() async {
+    if (kIsWeb) return [];
     final db = await database;
     try {
       // Query yang lebih sederhana dan efisien untuk mengambil room terbaru per grup member
@@ -167,6 +173,7 @@ class LocalDbService {
   // === Message Operations ===
 
   Future<void> saveMessage(String roomId, ChatMessage message, {String? localPath}) async {
+    if (kIsWeb) return;
     final db = await database;
     await db.transaction((txn) async {
       await txn.insert(
@@ -204,6 +211,7 @@ class LocalDbService {
   }
 
   Future<List<ChatMessage>> getMessages(String roomId) async {
+    if (kIsWeb) return [];
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'messages',
@@ -228,6 +236,7 @@ class LocalDbService {
   }
 
   Future<void> markMessagesAsRead(String roomId, String currentUserId) async {
+    if (kIsWeb) return;
     final db = await database;
     await db.update(
       'messages',
@@ -238,6 +247,7 @@ class LocalDbService {
   }
 
   Future<int> getUnreadCount(String roomId, String currentUserId) async {
+    if (kIsWeb) return 0;
     final db = await database;
     final result = await db.rawQuery(
       'SELECT COUNT(*) FROM messages WHERE room_id = ? AND senderId != ? AND status = ?',
@@ -247,6 +257,7 @@ class LocalDbService {
   }
 
   Future<int> getTotalUnreadCount(String currentUserId) async {
+    if (kIsWeb) return 0;
     final db = await database;
     final result = await db.rawQuery(
       'SELECT COUNT(*) FROM messages WHERE senderId != ? AND status = ?',
@@ -256,6 +267,7 @@ class LocalDbService {
   }
 
   Future<void> updateMessage(String msgId, String newText, {String? status}) async {
+    if (kIsWeb) return;
     final db = await database;
     Map<String, dynamic> data = {'text': newText};
     if (status != null) data['status'] = status;
@@ -263,6 +275,7 @@ class LocalDbService {
   }
 
   Future<void> deleteMessage(String msgId) async {
+    if (kIsWeb) return;
     final db = await database;
     await db.delete('messages', where: 'id = ?', whereArgs: [msgId]);
   }

@@ -130,6 +130,7 @@ class ChatService {
   }
 
   Future<String?> _saveBase64ToFile(String base64Data, String fileName) async {
+    if (kIsWeb) return null; // dart:io not supported on Web
     try {
       final parts = base64Data.split(',');
       if (parts.length < 2) return null;
@@ -151,16 +152,18 @@ class ChatService {
     }
   }
 
-  Future<String?> uploadChatFile(String roomId, File file, String type) async {
+  Future<String?> uploadChatFile(String roomId, dynamic file, String type) async {
+    if (kIsWeb) return null; // Simplified for Demo
     try {
-      if (!await file.exists()) return null;
+      final actualFile = file as File;
+      if (!await actualFile.exists()) return null;
       // Tingkatkan sedikit batas jika memang dibutuhkan, tapi tetap waspada limit Firestore
-      if (file.lengthSync() > 900000) return null; 
+      if (actualFile.lengthSync() > 900000) return null; 
 
-      List<int> fileBytes = await file.readAsBytes();
+      List<int> fileBytes = await actualFile.readAsBytes();
       String base64String = base64Encode(fileBytes);
       
-      String ext = p.extension(file.path).replaceAll('.', '');
+      String ext = p.extension(actualFile.path).replaceAll('.', '');
       if (ext.isEmpty) ext = (type == 'images') ? 'png' : 'bin';
       
       return "data:${type == 'images' ? 'image' : 'application/octet-stream'}/$ext;base64,$base64String";

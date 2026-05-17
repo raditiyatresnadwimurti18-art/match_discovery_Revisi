@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'chat_service.dart';
 
@@ -12,6 +13,7 @@ class NotificationService {
   static bool _isFirstLoad = true;
 
   static Future<void> init() async {
+    if (kIsWeb) return; // Skip for Web
     // 1. Request Permission FCM
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
@@ -67,11 +69,13 @@ class NotificationService {
   }
 
   static Future<String?> getToken() async {
+    if (kIsWeb) return null;
     return await _messaging.getToken();
   }
 
   /// Memantau koleksi 'notifications' untuk user tertentu
   static void listenToUserNotifications(String userId) {
+    if (kIsWeb) return;
     print("NotificationService: Mulai memantau notifikasi untuk user $userId...");
 
     FirebaseFirestore.instance

@@ -1,4 +1,5 @@
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:match_discovery/database/controllers/auth.dart';
 import 'package:match_discovery/database/preferences.dart';
@@ -31,10 +32,24 @@ class _Login1State extends State<Login1> {
   }
 
   Future<void> _masukSebagaiTamu() async {
-    await PreferenceHandler.setRole('guest');
-    await PreferenceHandler.storingIsLogin(false);
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selamat Datang di Demo Match Discovery (Web Mode)!'),
+          backgroundColor: kPrimaryColor,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      await PreferenceHandler.storingUserId('demo_user_web');
+      await PreferenceHandler.setRole('user'); // Set as user for more interaction
+      await PreferenceHandler.storingIsLogin(true); // Treat as logged in for demo
+    } else {
+      await PreferenceHandler.setRole('guest');
+      await PreferenceHandler.storingIsLogin(false);
+    }
+    
     if (!mounted) return;
-    context.pushAndRemoveAll(HomeUser());
+    context.pushAndRemoveAll(const HomeUser());
   }
 
   void _showForgotPasswordDialog() {
