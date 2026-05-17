@@ -269,108 +269,31 @@ class DetailLomba extends StatelessWidget {
             ),
           ],
         ),
-        child: FutureBuilder<String?>(
-          future: Future.value(PreferenceHandler.getUserId()),
-          builder: (context, userSnap) {
-            if (!userSnap.hasData || userSnap.data == null) {
-              return SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  style: kPrimaryButtonStyle(radius: 18),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Silakan login terlebih dahulu untuk mendaftar.")),
-                    );
-                  },
-                  child: const Text("Daftar Sekarang"),
-                ),
-              );
-            }
-            final uid = userSnap.data!;
-            
-            return FutureBuilder<bool>(
-              future: RiwayatController.isUserSedangIkutLomba(uid, lomba.id!),
-              builder: (context, registeredSnap) {
-                final isRegistered = registeredSnap.data ?? false;
-
-                return FutureBuilder<KelompokModel?>(
-                  future: KelompokController.getMyKelompok(lomba.id!, uid),
-                  builder: (context, kelSnap) {
-                    final myKel = kelSnap.data;
-                    bool isKelompok = lomba.jenisLomba == 'Kelompok';
-                    
-                    String btnText = "Daftar Sekarang";
-                    Color btnColor = kPrimaryColor;
-                    VoidCallback? onPressed;
-
-                    if (isRegistered) {
-                      btnText = "Sudah Terdaftar";
-                      btnColor = Colors.green;
-                      onPressed = () {
-                        if (isKelompok && myKel != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => DetailKelompokPage(idKelompok: myKel.id!, lomba: lomba))
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Anda sudah terdaftar di kompetisi ini."), backgroundColor: Colors.green),
-                          );
-                        }
-                      };
-                    } else if (isKelompok) {
-                      if (myKel == null) {
-                        btnText = "Cari Kelompok";
-                        onPressed = () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => CariKelompokPage(lomba: lomba))
-                          );
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => DetailLomba(lomba: lomba))
-                          );
-                        };
-                      } else {
-                        btnText = "Menunggu Anggota (${myKel.anggotaIds.length}/${myKel.maxAnggota})";
-                        btnColor = Colors.orange;
-                        onPressed = () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => DetailKelompokPage(idKelompok: myKel.id!, lomba: lomba))
-                          );
-                        };
-                      }
-                    } else {
-                      // Individual
-                      onPressed = () => _daftarLomba(context);
-                    }
-
-                    return FadeInUp(
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: btnColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            elevation: 0,
-                          ),
-                          onPressed: onPressed,
-                          child: Text(
-                            btnText,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+        child: FadeInUp(
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey.shade400,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                elevation: 0,
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Fitur pendaftaran dinonaktifkan di Demo Mode."),
+                    behavior: SnackBarBehavior.floating,
+                  ),
                 );
-              }
-            );
-          }
+              },
+              child: const Text(
+                "Pendaftaran (Demo Mode)",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+              ),
+            ),
+          ),
         ),
       ),
     );

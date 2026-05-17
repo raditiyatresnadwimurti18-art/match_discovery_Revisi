@@ -26,18 +26,8 @@ class _SplashscreenT16State extends State<SplashscreenT16> {
     await Future.delayed(const Duration(milliseconds: 3000));
     if (!mounted) return;
 
-    final bool? isLogin = PreferenceHandler.getIsLogin();
-    final String? role = PreferenceHandler.getRole();
-
-    if (!mounted) return;
-
-    if (isLogin == true && (role == 'admin' || role == 'super')) {
-      context.pushAndRemoveAll(const Home());
-    } else if (isLogin == true && role == 'user') {
-      context.pushAndRemoveAll(const HomeUser());
-    } else {
-      context.pushAndRemoveAll(const Login());
-    }
+    // Untuk demo, langsung ke HomeUser agar bisa melihat-lihat
+    context.pushAndRemoveAll(const HomeUser());
   }
 
   @override

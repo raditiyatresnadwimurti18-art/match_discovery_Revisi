@@ -33,43 +33,16 @@ class IsiHomeUser extends StatelessWidget {
           ),
         ),
         actions: [
-          StreamBuilder<int>(
-            stream: ChatService().getTotalUnreadCountStream(userId),
-            builder: (context, snapshot) {
-              final int unreadCount = snapshot.data ?? 0;
-              
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ChatListPage()),
-                      );
-                    },
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, color: kPrimaryColor, size: 24),
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: kBgColor, width: 1.5),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 10,
-                          minHeight: 10,
-                        ),
-                      ),
-                    ),
-                ],
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Fitur chat dinonaktifkan di Demo Mode."),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
+            icon: const Icon(Icons.chat_bubble_outline_rounded, color: kPrimaryColor, size: 24),
           ),
           const SizedBox(width: 8),
         ],
