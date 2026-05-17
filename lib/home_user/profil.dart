@@ -437,16 +437,41 @@ class _ProfilUserState extends State<ProfilUser> {
         SizedBox(
           width: double.infinity,
           child: TextButton.icon(
-            onPressed: () async {
-              await PreferenceHandler.clearAll();
-              if (!mounted) return;
-              context.pushAndRemoveAll(const Login());
-            },
+            onPressed: _showLogoutConfirm,
             icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.red),
             label: const Text("Keluar Akun", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
+    );
+  }
+
+  void _showLogoutConfirm() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Konfirmasi Logout', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+        content: Text('Apakah Anda yakin ingin keluar dari akun ini?', style: GoogleFonts.plusJakartaSans()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal', style: GoogleFonts.plusJakartaSans(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await PreferenceHandler.clearAll();
+              if (!mounted) return;
+              Navigator.pop(context);
+              context.pushAndRemoveAll(const Login());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Keluar', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 

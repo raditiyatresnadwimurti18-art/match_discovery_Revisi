@@ -6,6 +6,7 @@ class ChatRoom {
   final String lastMessage;
   final DateTime lastTime;
   final String? lastSenderId;
+  final Map<String, DateTime> readStatus; // UID: LastReadTime
 
   ChatRoom({
     required this.id,
@@ -13,10 +14,20 @@ class ChatRoom {
     required this.lastMessage,
     required this.lastTime,
     this.lastSenderId,
+    this.readStatus = const {},
   });
 
   factory ChatRoom.fromFirestore(DocumentSnapshot doc) {
     Map data = doc.data() as Map<String, dynamic>;
+    Map<String, DateTime> statusMap = {};
+    if (data['readStatus'] != null) {
+      (data['readStatus'] as Map).forEach((key, value) {
+        if (value is Timestamp) {
+          statusMap[key] = value.toDate().toUtc();
+        }
+      });
+    }
+
     return ChatRoom(
       id: doc.id,
       members: List<String>.from(data['members'] ?? []),
@@ -25,15 +36,22 @@ class ChatRoom {
           ? (data['last_time'] as Timestamp).toDate().toUtc() 
           : DateTime.now().toUtc(),
       lastSenderId: data['last_senderId'],
+      readStatus: statusMap,
     );
   }
 
   Map<String, dynamic> toFirestore() {
+    Map<String, Timestamp> firestoreStatus = {};
+    readStatus.forEach((key, value) {
+      firestoreStatus[key] = Timestamp.fromDate(value);
+    });
+
     return {
       'members': members,
       'last_message': lastMessage,
       'last_time': Timestamp.fromDate(lastTime),
       'last_senderId': lastSenderId,
+      'readStatus': firestoreStatus,
     };
   }
 }

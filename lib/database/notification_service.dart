@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'chat_service.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -50,6 +51,12 @@ class NotificationService {
     // 5. Listen for Foreground FCM Messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
+        // Jangan munculkan notifikasi jika sedang di room yang sama
+        final String? roomId = message.data['roomId'];
+        if (roomId != null && roomId == ChatService.activeRoomId) {
+          return;
+        }
+
         _showLocalNotification(
           title: message.notification?.title ?? 'Notifikasi',
           body: message.notification?.body ?? '',
@@ -77,6 +84,14 @@ class NotificationService {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
           if (data != null) {
+            // Jangan munculkan notifikasi jika sedang di room yang sama
+            final String? roomId = data['roomId'];
+            if (roomId != null && roomId == ChatService.activeRoomId) {
+              // Tetap hapus agar tidak menumpuk, tapi jangan tampilkan pop-up
+              change.doc.reference.delete();
+              return;
+            }
+
             // Konversi Timestamp ke String agar bisa di-encode ke JSON
             Map<String, dynamic> serializableData = Map.from(data);
             serializableData.forEach((key, value) {
@@ -90,6 +105,12 @@ class NotificationService {
               body: data['body'] ?? '',
               payload: jsonEncode(serializableData),
             );
+
+            // Sync chat messages if it's a chat notification
+            if (data['type'] == 'chat') {
+              ChatService().syncAllRooms(userId);
+            }
+
             // HAPUS dokumen agar Firestore tidak penuh
             change.doc.reference.delete();
           }

@@ -43,8 +43,19 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    ChatService.activeRoomId = widget.roomId; // Set active room
     _cleanupNotifications();
     _markRead();
+  }
+
+  @override
+  void dispose() {
+    if (ChatService.activeRoomId == widget.roomId) {
+      ChatService.activeRoomId = null; // Clear active room
+    }
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _markRead() {
@@ -52,77 +63,87 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _cleanupNotifications() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('notifications')
-        .where('targetId', isEqualTo: widget.currentUserId)
-        .where('roomId', isEqualTo: widget.roomId)
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('targetId', isEqualTo: widget.currentUserId)
+          .where('roomId', isEqualTo: widget.roomId)
+          .get();
 
-    for (var doc in snapshot.docs) {
-      doc.reference.delete();
+      if (snapshot.docs.isNotEmpty) {
+        final batch = FirebaseFirestore.instance.batch();
+        for (var doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } catch (e) {
+      debugPrint("Error cleaning notifications: $e");
     }
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: source,
-      imageQuality: 50,
-      maxWidth: 1024,
-      maxHeight: 1024,
-    );
-
-    if (pickedFile != null) {
-      setState(() => _isUploading = true);
-
-      File file = File(pickedFile.path);
-      String? imageUrl = await _chatService.uploadChatFile(
-        widget.roomId,
-        file,
-        'images',
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 50,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
 
-      if (imageUrl == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal mengunggah gambar. Pastikan ukuran file tidak terlalu besar.')),
-          );
+      if (pickedFile != null) {
+        setState(() => _isUploading = true);
+
+        File file = File(pickedFile.path);
+        String? imageUrl = await _chatService.uploadChatFile(
+          widget.roomId,
+          file,
+          'images',
+        );
+
+        if (imageUrl == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Gagal mengunggah gambar. Pastikan ukuran file tidak terlalu besar.')),
+            );
+          }
+          return;
         }
-        setState(() => _isUploading = false);
-        return;
+
+        final newMessage = ChatMessage(
+          id: '', 
+          senderId: widget.currentUserId,
+          text: 'Mengirim gambar',
+          timestamp: DateTime.now().toUtc(),
+          status: 'sent',
+          messageType: 'image',
+          fileUrl: imageUrl,
+          localPath: pickedFile.path,
+        );
+        
+        await _chatService.sendMessage(widget.roomId, newMessage, localPath: pickedFile.path);
       }
-
-      final newMessage = ChatMessage(
-        id: '', 
-        senderId: widget.currentUserId,
-        text: 'Mengirim gambar',
-        timestamp: DateTime.now(),
-        status: 'sent',
-        messageType: 'image',
-        fileUrl: imageUrl,
-        localPath: pickedFile.path,
-      );
-      
-      await _chatService.sendMessage(widget.roomId, newMessage, localPath: pickedFile.path);
-
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+    } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
   Future<void> _pickFile() async {
     try {
-      final dynamic filePickerClass = FilePicker;
-      final dynamic result = await filePickerClass.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
       );
 
-      if (result != null && result.files != null && result.files.isNotEmpty) {
-        final dynamic selectedFile = result.files.first;
+      if (result != null && result.files.isNotEmpty) {
+        final selectedFile = result.files.first;
         if (selectedFile.path != null) {
           setState(() => _isUploading = true);
 
           File file = File(selectedFile.path!);
-          String fileName = selectedFile.name ?? 'Berkas';
+          String fileName = selectedFile.name;
           String? fileUrl = await _chatService.uploadChatFile(
             widget.roomId,
             file,
@@ -132,18 +153,17 @@ class _ChatScreenState extends State<ChatScreen> {
           if (fileUrl == null) {
              if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Gagal mengirim file. Pastikan ukuran file tidak melebihi 700KB.')),
+                const SnackBar(content: Text('Gagal mengirim file. Pastikan ukuran file tidak terlalu besar.')),
               );
             }
-            setState(() => _isUploading = false);
             return;
           }
 
           final newMessage = ChatMessage(
-            id: '', // Will be generated
+            id: '', 
             senderId: widget.currentUserId,
             text: 'Mengirim dokumen: $fileName',
-            timestamp: DateTime.now(),
+            timestamp: DateTime.now().toUtc(),
             status: 'sent',
             messageType: 'file',
             fileUrl: fileUrl,
@@ -161,13 +181,14 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _handleSend() {
-    if (_messageController.text.trim().isEmpty) return;
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
     final newMessage = ChatMessage(
-      id: '', // Will be generated
+      id: '', 
       senderId: widget.currentUserId,
-      text: _messageController.text.trim(),
-      timestamp: DateTime.now().toUtc(), // SISTEM: GMT0
+      text: text,
+      timestamp: DateTime.now().toUtc(),
       status: 'sent',
       messageType: 'text',
     );
@@ -177,7 +198,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String _getDateString(DateTime dateUtc) {
-    final date = dateUtc.toLocal(); // TAMPILAN: LOCAL
+    final date = dateUtc.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
@@ -274,98 +295,111 @@ class _ChatScreenState extends State<ChatScreen> {
           },
         ),
       ),
-      body: Column(
-        children: [
-          if (_isUploading)
-            const LinearProgressIndicator(
-              backgroundColor: Colors.transparent,
-              color: kSecondaryColor,
-              minHeight: 2,
-            ),
-          Expanded(
-            child: StreamBuilder<List<ChatMessage>>(
-              stream: _chatService.getMessages(widget.roomId, widget.currentUserId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    !snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: kPrimaryColor),
-                  );
-                }
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
+        builder: (context, roomSnap) {
+          DateTime? peerReadTimestamp;
+          if (roomSnap.hasData && roomSnap.data!.exists) {
+            final roomData = roomSnap.data!.data() as Map<String, dynamic>;
+            final readStatus = roomData['readStatus'] as Map<String, dynamic>?;
+            if (readStatus != null && readStatus[peerId] != null) {
+              peerReadTimestamp = (readStatus[peerId] as Timestamp).toDate();
+            }
+          }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Belum ada pesan. Sapa temanmu!',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                _markRead();
-                
-                // CACAD LOGIKA FIX: Copy list dan paksa sorting DESCENDING berdasarkan MILIDETIK
-                // agar index 0 selalu pesan terbaru secara absolut (paling bawah di reverse:true)
-                final List<ChatMessage> messages = List<ChatMessage>.from(snapshot.data!);
-                messages.sort((a, b) {
-                  int cmp = b.timestamp.millisecondsSinceEpoch.compareTo(a.timestamp.millisecondsSinceEpoch);
-                  if (cmp == 0) {
-                    return b.id.compareTo(a.id); // Tie-breaker menggunakan ID jika milidetik sama
-                  }
-                  return cmp;
-                });
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = msg.senderId == widget.currentUserId;
-
-                    // Logika Header Tanggal untuk List Terbalik (Milidetik Precision):
-                    bool showDate = false;
-                    DateTime date = msg.timestamp;
-                    
-                    if (index == messages.length - 1) {
-                      showDate = true;
-                    } else {
-                      DateTime olderDate = messages[index + 1].timestamp;
-                      if (date.day != olderDate.day ||
-                          date.month != olderDate.month ||
-                          date.year != olderDate.year) {
-                        showDate = true;
-                      }
+          return Column(
+            children: [
+              if (_isUploading)
+                const LinearProgressIndicator(
+                  backgroundColor: Colors.transparent,
+                  color: kSecondaryColor,
+                  minHeight: 2,
+                ),
+              Expanded(
+                child: StreamBuilder<List<ChatMessage>>(
+                  stream: _chatService.getMessages(widget.roomId, widget.currentUserId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: kPrimaryColor),
+                      );
                     }
 
-                    return Column(
-                      children: [
-                        if (showDate)
-                          _buildDateHeader(_getDateString(date)),
-                        _buildChatBubble(msg, isMe),
-                      ],
+                    final List<ChatMessage> messages = snapshot.data ?? [];
+                    if (messages.isEmpty) {
+                      return Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Belum ada pesan. Sapa temanmu!',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    // Tandai dibaca jika ada pesan baru
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _markRead();
+                    });
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        final isMe = msg.senderId == widget.currentUserId;
+
+                        // Periksa apakah pesan sudah dibaca lawan bicara
+                        bool isReadByPeer = false;
+                        if (isMe && peerReadTimestamp != null) {
+                          isReadByPeer = msg.timestamp.isBefore(peerReadTimestamp!) || 
+                                         msg.timestamp.isAtSameMomentAs(peerReadTimestamp!);
+                        }
+
+                        bool showDate = false;
+                        DateTime date = msg.timestamp;
+                        
+                        if (index == messages.length - 1) {
+                          showDate = true;
+                        } else {
+                          DateTime olderDate = messages[index + 1].timestamp;
+                          if (date.toLocal().day != olderDate.toLocal().day ||
+                              date.toLocal().month != olderDate.toLocal().month ||
+                              date.toLocal().year != olderDate.toLocal().year) {
+                            showDate = true;
+                          }
+                        }
+
+                        return Column(
+                          children: [
+                            if (showDate)
+                              _buildDateHeader(_getDateString(date)),
+                            _buildChatBubble(msg, isMe, isReadByPeer),
+                          ],
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-          ),
-          _buildInputArea(),
-        ],
+                ),
+              ),
+              _buildInputArea(),
+            ],
+          );
+        }
       ),
     );
   }
@@ -460,11 +494,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   try {
                     String? pathToSave = localPath;
                     
-                    // Jika file tidak ada secara lokal (misal: pesan masuk), unduh terlebih dahulu
                     if (pathToSave == null || !File(pathToSave).existsSync()) {
                       if (imageUrl == null) return;
                       
-                      // Beri tahu user sedang memproses
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Sedang mengunduh gambar...'), duration: Duration(seconds: 1)),
                       );
@@ -480,13 +512,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       }
                     }
 
-                    // Minta izin akses secara eksplisit sebelum menyimpan
                     final hasAccess = await Gal.hasAccess();
                     if (!hasAccess) {
                       await Gal.requestAccess();
                     }
 
-                    // Simpan ke Galeri menggunakan paket gal
                     await Gal.putImage(pathToSave);
                     
                     if (context.mounted) {
@@ -615,7 +645,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildChatBubble(ChatMessage msg, bool isMe) {
+  Widget _buildChatBubble(ChatMessage msg, bool isMe, bool isReadByPeer) {
     bool isImage = msg.messageType == 'image';
     bool isFile = msg.messageType == 'file';
     bool isDeleted = msg.status == 'deleted';
@@ -709,7 +739,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     Icon(
                       Icons.done_all_rounded,
                       size: 14,
-                      color: msg.status == 'read'
+                      color: isReadByPeer
                           ? Colors.lightBlueAccent
                           : Colors.white70,
                     ),

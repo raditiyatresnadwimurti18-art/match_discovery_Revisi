@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:match_discovery/database/chat_service.dart';
+import 'package:match_discovery/database/preferences.dart';
 import 'package:match_discovery/home_user/asset_lomba/daftar_lomba.dart';
 import 'package:match_discovery/home_user/chat_list_page.dart';
 import 'package:match_discovery/home_user/promo_slider.dart';
@@ -10,6 +12,8 @@ class IsiHomeUser extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String userId = PreferenceHandler.getUserId() ?? '';
+    
     return Scaffold(
       backgroundColor: kBgColor,
       appBar: AppBar(
@@ -29,14 +33,43 @@ class IsiHomeUser extends StatelessWidget {
           ),
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChatListPage()),
+          StreamBuilder<int>(
+            stream: ChatService().getTotalUnreadCountStream(userId),
+            builder: (context, snapshot) {
+              final int unreadCount = snapshot.data ?? 0;
+              
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChatListPage()),
+                      );
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline_rounded, color: kPrimaryColor, size: 24),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: kBgColor, width: 1.5),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 10,
+                          minHeight: 10,
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
-            icon: const Icon(Icons.chat_bubble_outline_rounded, color: kPrimaryColor, size: 24),
           ),
           const SizedBox(width: 8),
         ],
